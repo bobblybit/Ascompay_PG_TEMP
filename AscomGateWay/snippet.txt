@@ -1,0 +1,198 @@
+-------------------------------------
+    2022-08-18
+-------------------------------------
+  1. Paystack
+    - Pay (done)
+    - Query 
+    - PayCallback (done)
+    - dbUpdate (done)
+  2. GTPay
+    - Pay 
+    - Query 
+    - PayCallback 
+    - dbUpdate 
+
+
+-------------------------------------
+    2022-08-16
+-------------------------------------
+1. All payment gateway would have its own confirmation page 
+    Model would include amongst other things, client callback url to return to ...
+2. All payment gateway would have its own implementation for Pay and PayQuery 
+
+
+-------------------------------------
+**** Initialize
+
+- request
+curl https://api.paystack.co/Transactions/initialize
+-H "Authorization: Bearer YOUR_SECRET_KEY"
+-H "Content-Type: application/json"
+-d '{ "email": "customer@email.com", "amount": "20000" }'
+-X POST
+
+- response
+{
+  "status": true,
+  "message": "Authorization URL created",
+  "data": {
+    "authorization_url": "https://checkout.paystack.com/0peioxfhpn",
+    "access_code": "0peioxfhpn",
+    "reference": "7PVGX8MEk85tgeEpVDtD"
+  }
+}
+
+public class PaystackPayRequst 
+{
+    public string email { get; set; }
+    public string amount { get; set; }
+    public string reference { get; set; }
+    public string currency { get; set; } = "NGN";
+    public string callback { get; set; }
+
+}
+
+public class PaystackPayResponse 
+{
+    public bool status { get; set; }
+    public string message { get; set; }
+    public PaystackPayResponseData data { get; set; }
+
+}
+public class PaystackPayResponseData
+{
+    public bool authorization_url { get; set; }
+    public string access_code { get; set; }
+    public string reference { get; set; }
+
+}
+
+
+
+
+
+**** VerifyRequest
+- request
+curl https://api.paystack.co/Transactions/verify/:reference
+-H "Authorization: Bearer YOUR_SECRET_KEY"
+-X GET
+
+- response
+{
+  "status": true,
+  "message": "Verification successful",
+  "data": {
+    "amount": 27000,
+    "currency": "NGN",
+    "Transactions_date": "2016-10-01T11:03:09.000Z",
+    "status": "success",
+    "reference": "DG4uishudoq90LD",
+    "domain": "test",
+    "metadata": 0,
+    "gateway_response": "Successful",
+    "message": null,
+    "channel": "card",
+    "ip_address": "41.1.25.1",
+    "log": {
+      "time_spent": 9,
+      "attempts": 1,
+      "authentication": null,
+      "errors": 0,
+      "success": true,
+      "mobile": false,
+      "input": [],
+      "channel": null,
+      "history": [{
+        "type": "input",
+        "message": "Filled these fields: card number, card expiry, card cvv",
+        "time": 7
+        },
+        {
+          "type": "action",
+          "message": "Attempted to pay",
+          "time": 7
+        },
+        {
+          "type": "success",
+          "message": "Successfully paid",
+          "time": 8
+        },
+        {
+          "type": "close",
+          "message": "Page closed",
+          "time": 9
+        }
+      ]
+    }
+    "fees": null,
+    "authorization": {
+      "authorization_code": "AUTH_8dfhjjdt",
+      "card_type": "visa",
+      "last4": "1381",
+      "exp_month": "08",
+      "exp_year": "2018",
+      "bin": "412345",
+      "bank": "TEST BANK",
+      "channel": "card",
+      "signature": "SIG_idyuhgd87dUYSHO92D",
+      "reusable": true,
+      "country_code": "NG",
+      "account_name": "BoJack Horseman"
+    },
+    "customer": {
+      "id": 84312,
+      "customer_code": "CUS_hdhye17yj8qd2tx",
+      "first_name": "BoJack",
+      "last_name": "Horseman",
+      "email": "bojack@horseman.com"
+    },
+    "plan": "PLN_0as2m9n02cl0kp6",
+    "requested_amount": 1500000
+  }
+}
+
+public class PaystackPayQueryResponse 
+{
+    public bool status { get; set; }
+    public string message { get; set; }
+    public PaystackPayQueryResponseData data { get; set; }
+
+}
+
+public class PaystackPayQueryResponseData 
+{
+    public string amount { get; set; }
+    public string currency { get; set; }
+    public string Transactions_date { get; set; }
+    public string reference { get; set; }
+
+}
+-------------------------------------
+
+ToDos:
+    - Install 
+        - Http package 
+        - Entityframework 
+    - Add 
+        - Add db context 
+        - Add models 
+        - 
+-------------------------------------
+
+//dotnet add package : 
+CsvHelper
+Microsoft.EntityFrameworkCore;
+Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+Microsoft.EntityFrameworkCore.Tools
+Microsoft.EntityFrameworkCore.Design
+Microsoft.EntityFrameworkCore.SqlServer
+Newtonsoft.Json
+RestSharp
+Serilog.AspNetCore
+
+dotnet ef migrations add AddBlogCreatedTimestamp
+dotnet ef database update
+dotnet ef migrations list
+dotnet ef migrations remove
+dotnet ef migrations script AddNewTables AddAuditTable
+dotnet ef dbcontext scaffold "Server=(localdb)\mssqllocaldb;Database=Blogging;Trusted_Connection=True;" Microsoft.EntityFrameworkCore.SqlServer -o Models -t Blog -t Post --context-dir Context -c BlogContext --context-namespace New.Namespace

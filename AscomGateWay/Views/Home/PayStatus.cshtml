@@ -1,0 +1,39 @@
+﻿@model AscomPayPG.Models.ViewModels.PayStatusViewModel;
+@{
+    ViewData["Title"] = "Pay Status Page";
+    var redirectUrl = @Model.CallbackURL;
+}
+
+<div class="text-center bg-light col-sm-7 mx-auto p-5">
+    <div class="row mb-2">
+        <div class="col fw-bold text-dark">Status</div>
+        <div class="col">@Model.Status</div>
+    </div>
+    <div class="row mb-2">
+        <div class="col fw-bold text-dark">Status Description</div>
+        <div class="col">@Model?.StatusDescription</div>
+    </div>
+    <div class="row mb-2">
+        <div class="col fw-bold text-dark">Reference</div>
+        <div class="col">@Model?.Reference</div>
+    </div>
+    <div class="row">
+        <div class="col-md-12 col-sm-12 mb-sm-3">
+            <a href=@redirectUrl class="btn btn-outline-warning w-100 rounded-3 fs-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+                    class="bi bi-caret-left-fill text-warning" viewBox="0 0 16 16">
+                    <path
+                        d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z" />
+                </svg>
+                Return to Client</a>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function closePage() {
+        window.close(); // Close the current window/tab
+    }
+</script>
+
