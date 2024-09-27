@@ -247,7 +247,6 @@ namespace AscomPayPG.Models.WAAS
         public string Narration { get; set; }
         public string Description { get; set; }
         public string Amount { get; set; }
-
     }
 
     public class OtherBankTransfer

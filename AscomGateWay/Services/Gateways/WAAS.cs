@@ -209,10 +209,14 @@ namespace AscomPayPG.Services
                             }
                         }
                     }
-                    respObj.IsSuccessful = true;
-                    respObj.Message = "External Wallet Already Exist for user";
-                    respObj.Data = null;
-                    return respObj;
+                    else
+                    {
+                        respObj.IsSuccessful = true;
+                        respObj.Message = "External Wallet Already Exist for user";
+                        respObj.Data = null;
+                        return respObj;
+                    }
+                  
                 }
                 else
                 {
