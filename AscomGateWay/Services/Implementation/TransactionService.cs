@@ -733,20 +733,12 @@ namespace AscomPayPG.Services.Implementation
             {
                 var charges = await _transactionHelper.CalculateCharges(requestModel.Amount, TransactionTypes.TransferToAscomUsers.ToString());
                 var vat = TransactionHelper.CalculateVAT(requestModel.Amount + charges);
-                
-                if (requestModel.SenderAccountOrWallet == requestModel.ReceiverAccount)
-                    return new PlainResponse
-                    {
-                        IsSuccessful = false,
-                        Message = "sender and reciever account cannot be the same",
-                        Data = 0,
-                    };
-                var sourceAccount = await _clientRequestRepo.GetUserAccount(requestModel.SenderAccountOrWallet);
-                var recieverAccount = await _clientRequestRepo.GetUserAccount(requestModel.SenderAccountOrWallet);
+
+                var sourceAccount = new Models.DTO.Account();
+                var recieverAccount = await _clientRequestRepo.GetUserAccount(requestModel.ReceiverAccount);
                 var sourceWallet = await _clientRequestRepo.GetWalletById(requestModel.SenderAccountOrWallet);
                 var sender = new User();
-                var reciever = await _clientRequestRepo.GetUser(sourceAccount.UserUid.ToString());
-                decimal senderNewBalance = 0;
+                var reciever = new User();
 
                 if (recieverAccount == null)
                 {
@@ -757,8 +749,13 @@ namespace AscomPayPG.Services.Implementation
                         Data = 0,
                     };
                 }
+
+                reciever = await _clientRequestRepo.GetUser(recieverAccount.UserUid.ToString());
+
+                decimal senderNewBalance = 0;
                 if (requestModel.IsAccount)
                 {
+                    sourceAccount =  await _clientRequestRepo.GetUserAccount(requestModel.SenderAccountOrWallet);
                     if (sourceAccount == null)
                     {
                         return new PlainResponse
@@ -782,7 +779,17 @@ namespace AscomPayPG.Services.Implementation
                         };
                     }
                     sender = await _clientRequestRepo.GetUser(sourceWallet.UserUid.ToString());
+                    sourceAccount = await _clientRequestRepo.GetUserAccountByUserUid(sender.UserUid.ToString());
                 }
+
+
+                /*if (sender == reciever)
+                    return new PlainResponse
+                    {
+                        IsSuccessful = false,
+                        Message = "sender and reciever account cannot be the same",
+                        Data = 0,
+                    };*/
 
                 if (requestModel.IsAccount)
                 {
