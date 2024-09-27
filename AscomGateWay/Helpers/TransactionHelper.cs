@@ -1,8 +1,6 @@
 ﻿using AscomPayPG.Data;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Services.Interface;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace AscomPayPG.Helpers
 {
