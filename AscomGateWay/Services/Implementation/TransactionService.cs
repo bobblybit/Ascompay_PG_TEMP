@@ -628,7 +628,6 @@ namespace AscomPayPG.Services.Implementation
             try
             {
 
-                int webhookCnt = _context.Webhook.Count();
                 var accountEntity = await _clientRequestRepo.GetUserAccount(payload.accountnumber);
                 if(accountEntity != null)
                 {
@@ -636,7 +635,6 @@ namespace AscomPayPG.Services.Implementation
                     decimal newBalance = await UpdateDestinationAccountBalance(accountEntity, amount);
                     var json = JsonSerializer.Serialize(payload);
                     response.IsSuccessful = true;
-                    webhook.WebhookId = webhookCnt + 1;
                     webhook.Reference = payload.transactionref;
                     webhook.EventType = "collection.successful";
                     webhook.Vendor = "9PSB";
@@ -653,7 +651,6 @@ namespace AscomPayPG.Services.Implementation
                     
                     var json = JsonSerializer.Serialize(payload);
                     response.IsSuccessful = true;
-                    webhook.WebhookId = webhookCnt + 1;
                     webhook.Reference = payload.transactionref;
                     webhook.EventType = "collection.successful";
                     webhook.RequestString = json.ToString();

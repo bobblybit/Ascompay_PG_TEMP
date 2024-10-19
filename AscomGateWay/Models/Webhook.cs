@@ -1,4 +1,5 @@
 using AscomPayPG.Models.Shared;
+using System.ComponentModel.DataAnnotations;
 
 namespace AscomPayPG.Models
 {
@@ -11,6 +12,7 @@ namespace AscomPayPG.Models
             CreatedAt = DateTime.Now;
             UpdatedAt = DateTime.Now;
         }
+        [Key]
         public long WebhookId { get; set; }
         public string Reference { get; set; }
         public Guid Uid { get; set; } = new Guid();

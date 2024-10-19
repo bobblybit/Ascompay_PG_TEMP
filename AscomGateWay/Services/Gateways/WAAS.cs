@@ -320,17 +320,17 @@ namespace AscomPayPG.Services
                                 respObj.IsSuccessful = true;
                                 respObj.Data = responseObj.data;
                                 //update account balance
-                                var accountEntity = await _clientRequestRepo.GetUserAccount(model.accountNo);
-                                if (accountEntity != null)
-                                {
-                                    decimal amount = Convert.ToDecimal(responseObj.data.availableBalance);
-                                    decimal newBalance = await UpdateDestinationAccountBalance(accountEntity, amount);
-                                }
-                                else
-                                {
-                                    respObj.IsSuccessful = false;
-                                    respObj.Data = null;
-                                }
+                                //var accountEntity = await _clientRequestRepo.GetUserAccount(model.accountNo);
+                                //if (accountEntity != null)
+                                //{
+                                //    decimal amount = Convert.ToDecimal(responseObj.data.availableBalance);
+                                //    decimal newBalance = await UpdateSourceAccountBalance(accountEntity, amount);
+                                //}
+                                //else
+                                //{
+                                //    respObj.IsSuccessful = false;
+                                //    respObj.Data = null;
+                                //}
 
                                 respObj.ResponseCode = (int)response.StatusCode;
                                 respObj.Message = responseObj.message;
