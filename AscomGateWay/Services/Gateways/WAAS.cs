@@ -876,7 +876,7 @@ namespace AscomPayPG.Services
             var vat = TransactionHelper.CalculateVAT(decimal.Parse(model.Amount) + charges);
 
 
-            if (sender != null)
+            if (sender == null)
             {
                 return new PlainResponse
                 {
@@ -886,7 +886,7 @@ namespace AscomPayPG.Services
                 };
             }
 
-            if (sourceAccount != null)
+            if (sourceAccount == null)
             {
                 return new PlainResponse
                 {
