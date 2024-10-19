@@ -9,6 +9,7 @@ using AscomPayPG.Models.GTPay;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Interface;
+using Microsoft.EntityFrameworkCore;
 using SERVICES.Helpers;
 using SERVICES.Services.Interface.Notification;
 using System.Text.Json;
@@ -629,37 +630,46 @@ namespace AscomPayPG.Services.Implementation
             {
 
                 var accountEntity = await _clientRequestRepo.GetUserAccount(payload.accountnumber);
-                if(accountEntity != null)
+                var hookEntity = await _context.Webhook.FirstOrDefaultAsync(x => x.Reference == payload.transactionref);
+                if(hookEntity == null)
                 {
-                    decimal amount = Convert.ToDecimal(payload.amount);
-                    decimal newBalance = await UpdateDestinationAccountBalance(accountEntity, amount);
-                    var json = JsonSerializer.Serialize(payload);
-                    response.IsSuccessful = true;
-                    webhook.Reference = payload.transactionref;
-                    webhook.EventType = "collection.successful";
-                    webhook.Vendor = "9PSB";
-                    webhook.Service = "Payment";
-                    webhook.RequestString = json.ToString();
-                    _context.Add(webhook);
-                    await _context.SaveChangesAsync();
-                    response.Message = $"web hook saved successfully.";
-                    response.ResponseCode = StatusCodes.Status200OK;
+                    if (accountEntity != null)
+                    {
+                        decimal amount = Convert.ToDecimal(payload.amount);
+                        decimal newBalance = await UpdateDestinationAccountBalance(accountEntity, amount);
+                        var json = JsonSerializer.Serialize(payload);
+                        response.IsSuccessful = true;
+                        webhook.Reference = payload.transactionref;
+                        webhook.EventType = "collection.successful";
+                        webhook.Vendor = "9PSB";
+                        webhook.Service = "Payment";
+                        webhook.RequestString = json.ToString();
+                        _context.Add(webhook);
+                        await _context.SaveChangesAsync();
+                        response.Message = $"web hook saved successfully.";
+                        response.ResponseCode = StatusCodes.Status200OK;
+                    }
+                    else
+                    {
+                        decimal amount = Convert.ToDecimal(payload.amount);
+
+                        var json = JsonSerializer.Serialize(payload);
+                        response.IsSuccessful = true;
+                        webhook.Reference = payload.transactionref;
+                        webhook.EventType = "collection.successful";
+                        webhook.RequestString = json.ToString();
+                        _context.Add(webhook);
+                        await _context.SaveChangesAsync();
+                        response.Message = $"web hook saved successfully.";
+                        response.ResponseCode = StatusCodes.Status200OK;
+                    }
                 }
                 else
                 {
-                    decimal amount = Convert.ToDecimal(payload.amount);
-                    
-                    var json = JsonSerializer.Serialize(payload);
-                    response.IsSuccessful = true;
-                    webhook.Reference = payload.transactionref;
-                    webhook.EventType = "collection.successful";
-                    webhook.RequestString = json.ToString();
-                    _context.Add(webhook);
-                    await _context.SaveChangesAsync();
-                    response.Message = $"web hook saved successfully.";
-                    response.ResponseCode = StatusCodes.Status200OK;
+                    response.IsSuccessful = false;
+                    response.Message = "Webhook notification already received";
+                    response.ResponseCode = StatusCodes.Status409Conflict;
                 }
-               
             }
             catch (Exception ex)
             {

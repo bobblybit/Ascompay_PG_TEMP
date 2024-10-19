@@ -279,6 +279,7 @@ namespace AscomPayPG.Services
         }
         public async Task<PlainResponse> WalletEnquiry(WalletRequest model)
         {
+           
             PlainResponse respObj = new PlainResponse();
             PlainResponse respAccessToken = new PlainResponse();
             string bvn = string.Empty;
@@ -324,7 +325,7 @@ namespace AscomPayPG.Services
                                 //if (accountEntity != null)
                                 //{
                                 //    decimal amount = Convert.ToDecimal(responseObj.data.availableBalance);
-                                //    decimal newBalance = await UpdateSourceAccountBalance(accountEntity, amount);
+                                //    decimal newBalance = await UpdateDestinationAccountBalance(accountEntity, amount);
                                 //}
                                 //else
                                 //{
