@@ -324,7 +324,7 @@ namespace AscomPayPG.Services
                                 if (accountEntity != null)
                                 {
                                     decimal amount = Convert.ToDecimal(responseObj.data.availableBalance);
-                                    decimal newBalance = await UpdateSourceAccountBalance(accountEntity, amount);
+                                    decimal newBalance = await UpdateDestinationAccountBalance(accountEntity, amount);
                                 }
                                 else
                                 {
@@ -1012,6 +1012,18 @@ namespace AscomPayPG.Services
         {
             var currentBalance = account.CurrentBalance;
             account.CurrentBalance -= amount;
+            account.PrevioseBalance = currentBalance;
+            var walletsBalance = await GetUserTotalWalletBalance(account.UserUid.ToString());
+            account.LegerBalance = account.CurrentBalance + walletsBalance;
+            _context.Accounts.Update(account);
+            await _context.SaveChangesAsync();
+            return account.CurrentBalance ?? 0;
+        }
+
+        public async Task<decimal> UpdateDestinationAccountBalance(Models.DTO.Account account, decimal amount)
+        {
+            var currentBalance = account.CurrentBalance;
+            account.CurrentBalance += amount;
             account.PrevioseBalance = currentBalance;
             var walletsBalance = await GetUserTotalWalletBalance(account.UserUid.ToString());
             account.LegerBalance = account.CurrentBalance + walletsBalance;

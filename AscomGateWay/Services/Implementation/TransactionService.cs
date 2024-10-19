@@ -633,7 +633,7 @@ namespace AscomPayPG.Services.Implementation
                 if(accountEntity != null)
                 {
                     decimal amount = Convert.ToDecimal(payload.amount);
-                    decimal newBalance = await UpdateSourceAccountBalance(accountEntity, amount);
+                    decimal newBalance = await UpdateDestinationAccountBalance(accountEntity, amount);
                     var json = JsonSerializer.Serialize(payload);
                     response.IsSuccessful = true;
                     webhook.WebhookId = webhookCnt + 1;
