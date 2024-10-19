@@ -937,12 +937,31 @@ namespace AscomPayPG.Services
                         Formatting = Formatting.Indented
                     };
 
+                    var payloadLoadAsJsonString = JsonConvert.SerializeObject(payload);
+
+                    ExternalIntegrationLog externalIntegrationLog = new ExternalIntegrationLog
+                    {
+                        CreatedBy = model.UserId,
+                        DateCreated = DateTime.Now,
+                        RequestTime = DateTime.Now,
+                        RequestPayload = payloadLoadAsJsonString,
+                        Vendor = "9PSB",
+                        Service = "Wallet/TransferToOtherBanks"
+                    };
+
                     StringContent content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
                         if (response.IsSuccessStatusCode)
                         {
                             string apiResponse = await response.Content.ReadAsStringAsync();
+
+                            externalIntegrationLog.Response = apiResponse;
+                            externalIntegrationLog.ResponseTime = DateTime.Now;
+
+                            _context.ExternalIntegrationLogs.Add(externalIntegrationLog);
+                            _context.SaveChanges();
+
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             if ((int)response.StatusCode == StatusCodes.Status200OK)
                             {
