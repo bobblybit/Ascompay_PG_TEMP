@@ -49,6 +49,8 @@ namespace AscomPayPG.Data
         //public DbSet<Beneficairy> Beneficairies { get; set; }
         //public DbSet<WalletType> WalletTypes { get; set; }
         //public DbSet<UserPasswordHistory> UserPasswordHistories { get; set; }
+        public DbSet<ExternalIntegrationLog> ExternalIntegrationLogs { get; set; }
+
         public DbSet<UserDeviceInformation> UserDeviceInformation { get; set; }
         public DbSet<UserDeviceAuthentication> UserDeviceAuthentication { get; set; }
 

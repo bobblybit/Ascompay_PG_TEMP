@@ -38,7 +38,7 @@ namespace AscomPayPG.Services.Implementation
             _configuration = configuration;
             _context = context;
             smartObj = new SmartObj(_context);
-            waas = new WAAS(_configuration, context);
+            waas = new WAAS(_configuration, context, _clientRequestRepo);
         }
         public async Task<TransferResponseDTO> TransferFundFromAccountOrWalletToAccount(TransferRequestDTO requestModel)
         {
@@ -608,6 +608,61 @@ namespace AscomPayPG.Services.Implementation
                     response.Message = $"Failed to save web hook.";
                     response.ResponseCode = StatusCodes.Status400BadRequest;
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                response.IsSuccessful = false;
+                response.Message = ex.Message;
+                response.ResponseCode = StatusCodes.Status500InternalServerError;
+            }
+
+
+            return response;
+        }
+
+        public async Task<PlainResponse> WebhookReceiver9PSB(NinePSBWebhook payload)
+        {
+            PlainResponse response = new PlainResponse();
+            Webhook webhook = new Webhook();
+            try
+            {
+
+                int webhookCnt = _context.Webhook.Count();
+                var accountEntity = await _clientRequestRepo.GetUserAccount(payload.accountnumber);
+                if(accountEntity != null)
+                {
+                    decimal amount = Convert.ToDecimal(payload.amount);
+                    decimal newBalance = await UpdateSourceAccountBalance(accountEntity, amount);
+                    var json = JsonSerializer.Serialize(payload);
+                    response.IsSuccessful = true;
+                    webhook.WebhookId = webhookCnt + 1;
+                    webhook.Reference = payload.transactionref;
+                    webhook.EventType = "collection.successful";
+                    webhook.Vendor = "9PSB";
+                    webhook.Service = "Payment";
+                    webhook.RequestString = json.ToString();
+                    _context.Add(webhook);
+                    await _context.SaveChangesAsync();
+                    response.Message = $"web hook saved successfully.";
+                    response.ResponseCode = StatusCodes.Status200OK;
+                }
+                else
+                {
+                    decimal amount = Convert.ToDecimal(payload.amount);
+                    
+                    var json = JsonSerializer.Serialize(payload);
+                    response.IsSuccessful = true;
+                    webhook.WebhookId = webhookCnt + 1;
+                    webhook.Reference = payload.transactionref;
+                    webhook.EventType = "collection.successful";
+                    webhook.RequestString = json.ToString();
+                    _context.Add(webhook);
+                    await _context.SaveChangesAsync();
+                    response.Message = $"web hook saved successfully.";
+                    response.ResponseCode = StatusCodes.Status200OK;
+                }
+               
             }
             catch (Exception ex)
             {

@@ -293,4 +293,20 @@ namespace AscomPayPG.Models.WAAS
         public string sessionId { get; set; }
     }
 
+    public class NinePSBWebhook
+    {
+        public string code { get; set; }
+        public string message { get; set; }
+        public string sourceaccount { get; set; }
+        public string amount { get; set; }
+        public string merchant { get; set; }
+        public string sourcebank { get; set; }
+        public string sendername { get; set; }
+        public string nipsessionid { get; set; }
+        public string accountnumber { get; set; }
+        public string narration { get; set; }
+        public string transactionref { get; set; }
+        public string orderref { get; set; }
+    }
+
 }

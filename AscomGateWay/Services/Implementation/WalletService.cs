@@ -10,6 +10,8 @@ namespace AscomPayPG.Services.Implementation
     {
         private IConfiguration _configuration;
         private readonly AppDbContext _context;
+        private readonly IClientRequestRepository<ClientRequest> _clientRequestRepo;
+    
         WAAS waas;
 
         public WalletService(IConfiguration configuration,
@@ -18,7 +20,8 @@ namespace AscomPayPG.Services.Implementation
         {
             _configuration = configuration;
             _context = context;
-            waas = new WAAS(_configuration,context);
+            _clientRequestRepo = clientRequestRepo;
+            waas = new WAAS(_configuration,context, _clientRequestRepo);
         }
         public async Task<PlainResponse> AccessToken()
         {

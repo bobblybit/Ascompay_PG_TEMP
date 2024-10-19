@@ -16,7 +16,8 @@ namespace AscomPayPG.Models
         public Guid Uid { get; set; } = new Guid();
         public string RequestString { get; set; }
         public string? EventType { get; set; }
-
+        public string? Vendor { get; set; }
+        public string? Service { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 

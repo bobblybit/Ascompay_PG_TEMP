@@ -7,6 +7,7 @@ using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Interface;
 using Microsoft.EntityFrameworkCore;
+using Nancy.Diagnostics;
 using Newtonsoft.Json;
 using System;
 using System.Dynamic;
@@ -19,13 +20,16 @@ namespace AscomPayPG.Services
     {
         private readonly IConfiguration _configuration;
         private readonly AppDbContext _context;
+        private readonly IClientRequestRepository<ClientRequest> _clientRequestRepo;
+
         private readonly ILogger<WAAS> _logger;
 
         public WAAS(IConfiguration configuration, 
-                    AppDbContext context)
+                    AppDbContext context, IClientRequestRepository<ClientRequest> clientRequestRepo)
         {
             _configuration = configuration;
             _context = context;
+            _clientRequestRepo = clientRequestRepo;
         }
 
 
@@ -52,10 +56,23 @@ namespace AscomPayPG.Services
                     StringContent content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+
+                        var log = new ExternalIntegrationLog
+                        {
+                            CreatedBy = "Ascompay",
+                            RequestTime = DateTime.Now,
+                            RequestPayload = JsonConvert.SerializeObject(requestData),
+                            Response = apiResponse,
+                            ResponseTime = DateTime.Now,
+                            Service = "Payment",
+                            Vendor = "9PSB",
+                        };
+                        _context.ExternalIntegrationLogs.Add(log);
+                        _context.SaveChanges();
                         if (response.IsSuccessStatusCode)
                         {
                             respObj.IsSuccessful = true;
-                            string apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             respObj.Data = responseObj.accessToken;
                             respObj.ResponseCode = (int)response.StatusCode;
@@ -64,7 +81,7 @@ namespace AscomPayPG.Services
                         else
                         {
                             respObj.IsSuccessful = false;
-                            string apiResponse = await response.Content.ReadAsStringAsync();
+                            apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             respObj.Message = responseObj.message;
                             respObj.Data = responseObj;
@@ -100,7 +117,7 @@ namespace AscomPayPG.Services
                     var UserExternalWalletEntity = await _context.UserExternalWallets.FirstOrDefaultAsync(x => x.UserUId == appUser.UserUid.ToString());
                     if (UserExternalWalletEntity == null)
                     {
-                        var KycEntity = await _context.UserKycs.FirstOrDefaultAsync(x => x.UserUid == appUser.UserUid && x.DocumentType.ToLower() == "bvn");
+                        var KycEntity = await _context.UserKycs.FirstOrDefaultAsync(x => x.UserUid == appUser.UserUid && x.DocumentType.ToLower() == "bvn" && x.DocumentNumber != null);
                         if (KycEntity != null)
                         {
                             bvn = KycEntity.DocumentNumber;
@@ -140,53 +157,77 @@ namespace AscomPayPG.Services
                             StringContent content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
                             using (var response = await httpClient.PostAsync(fullUrl, content))
                             {
+                                string apiResponse = await response.Content.ReadAsStringAsync();
+
+                                var log = new ExternalIntegrationLog
+                                {
+                                    CreatedBy = userUid,
+                                    RequestTime = DateTime.Now,
+                                    RequestPayload = JsonConvert.SerializeObject(requestData),
+                                    Response = apiResponse,
+                                    ResponseTime = DateTime.Now,
+                                    Service = "Payment",
+                                    Vendor = "9PSB",
+                                };
+                                _context.ExternalIntegrationLogs.Add(log);
+                                _context.SaveChanges();
+
                                 if (response.IsSuccessStatusCode)
                                 {
 
-                                    string apiResponse = await response.Content.ReadAsStringAsync();
                                     responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                                     if ((int)response.StatusCode == StatusCodes.Status200OK)
                                     {
-                                        respObj.IsSuccessful = true;
-                                        respObj.Data = responseObj.data;
-                                        //enquiry
-                                        WalletRequest walletRequest = new WalletRequest()
+                                        if(responseObj.status == "SUCCESS")
                                         {
-                                            accountNo = responseObj.data.accountNumber
-                                        };
+                                            respObj.IsSuccessful = true;
+                                            respObj.Data = responseObj.data;
+                                            //enquiry
+                                            WalletRequest walletRequest = new WalletRequest()
+                                            {
+                                                accountNo = responseObj.data.accountNumber
+                                            };
 
-                                        respWalletEnquiry = await WalletEnquiry(walletRequest);
-                                        if (respWalletEnquiry.IsSuccessful == true)
-                                        {
-                                            //save wallet details
-                                            UserExternalWallet userExternalWallet = new UserExternalWallet();
+                                            respWalletEnquiry = await WalletEnquiry(walletRequest);
+                                            if (respWalletEnquiry.IsSuccessful == true)
+                                            {
+                                                //save wallet details
+                                                UserExternalWallet userExternalWallet = new UserExternalWallet();
 
-                                            userExternalWallet.availableBalance = string.Empty;
-                                            userExternalWallet.bvn = respWalletEnquiry.Data.bvn;
-                                            userExternalWallet.email = appUser.Email;
-                                            userExternalWallet.firstName = appUser.FirstName;
-                                            userExternalWallet.lastName = appUser.LastName;
-                                            userExternalWallet.phoneNo = appUser.PhoneNumber;
-                                            userExternalWallet.freezeStatus = respWalletEnquiry.Data.freezeStatus;
-                                            userExternalWallet.ledgerBalance = string.Empty;
-                                            userExternalWallet.lienStatus = respWalletEnquiry.Data.lienStatus;
-                                            userExternalWallet.maximumBalance = string.Empty;
-                                            userExternalWallet.maximumDeposit = string.Empty;
-                                            userExternalWallet.name = respWalletEnquiry.Data.name;
-                                            userExternalWallet.nuban = respWalletEnquiry.Data.nuban;
-                                            userExternalWallet.number = respWalletEnquiry.Data.number;
-                                            userExternalWallet.pndstatus = respWalletEnquiry.Data.pndstatus;
-                                            userExternalWallet.status = respWalletEnquiry.Data.status;
-                                            userExternalWallet.productCode = respWalletEnquiry.Data.productCode;
-                                            userExternalWallet.tier = respWalletEnquiry.Data.tier;
-                                            userExternalWallet.UserUId = appUser.UserUid.ToString();
-                                            userExternalWallet.totalWalletBalance = string.Empty;
-                                            userExternalWallet.IsActive = true;
-                                            userExternalWallet.IsDeprecated = false;
+                                                userExternalWallet.availableBalance = string.Empty;
+                                                userExternalWallet.bvn = respWalletEnquiry.Data.bvn;
+                                                userExternalWallet.email = appUser.Email;
+                                                userExternalWallet.firstName = appUser.FirstName;
+                                                userExternalWallet.lastName = appUser.LastName;
+                                                userExternalWallet.phoneNo = appUser.PhoneNumber;
+                                                userExternalWallet.freezeStatus = respWalletEnquiry.Data.freezeStatus;
+                                                userExternalWallet.ledgerBalance = string.Empty;
+                                                userExternalWallet.lienStatus = respWalletEnquiry.Data.lienStatus;
+                                                userExternalWallet.maximumBalance = string.Empty;
+                                                userExternalWallet.maximumDeposit = string.Empty;
+                                                userExternalWallet.name = respWalletEnquiry.Data.name;
+                                                userExternalWallet.nuban = respWalletEnquiry.Data.nuban;
+                                                userExternalWallet.number = respWalletEnquiry.Data.number;
+                                                userExternalWallet.pndstatus = respWalletEnquiry.Data.pndstatus;
+                                                userExternalWallet.status = respWalletEnquiry.Data.status;
+                                                userExternalWallet.productCode = respWalletEnquiry.Data.productCode;
+                                                userExternalWallet.tier = respWalletEnquiry.Data.tier;
+                                                userExternalWallet.UserUId = appUser.UserUid.ToString();
+                                                userExternalWallet.totalWalletBalance = string.Empty;
+                                                userExternalWallet.IsActive = true;
+                                                userExternalWallet.IsDeprecated = false;
 
-                                            _context.Add(userExternalWallet);
-                                            await _context.SaveChangesAsync();
+                                                _context.Add(userExternalWallet);
+                                                await _context.SaveChangesAsync();
+                                            }
                                         }
+                                        else
+                                        {
+                                            respObj.IsSuccessful = false;
+                                            respObj.Data = null;
+                                            respObj.Message = responseObj.message;
+                                        }
+                                       
                                     }
                                     else
                                     {
@@ -200,7 +241,7 @@ namespace AscomPayPG.Services
                                 else
                                 {
                                     respObj.IsSuccessful = false;
-                                    string apiResponse = await response.Content.ReadAsStringAsync();
+                                    apiResponse = await response.Content.ReadAsStringAsync();
                                     responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                                     respObj.Message = responseObj.message;
                                     respObj.Data = null;
@@ -258,33 +299,51 @@ namespace AscomPayPG.Services
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+                        var log = new ExternalIntegrationLog
+                        {
+                            CreatedBy = "Ascompay",
+                            RequestTime = DateTime.Now,
+                            RequestPayload = JsonConvert.SerializeObject(model),
+                            Response = apiResponse,
+                            ResponseTime = DateTime.Now,
+                            Service = "Payment",
+                            Vendor = "9PSB",
+                        };
+                        _context.ExternalIntegrationLogs.Add(log);
+                        _context.SaveChanges();
                         if (response.IsSuccessStatusCode)
                         {
-
-                            string apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             if ((int)response.StatusCode == StatusCodes.Status200OK)
                             {
                                 respObj.IsSuccessful = true;
                                 respObj.Data = responseObj.data;
+                                //update account balance
+                                var accountEntity = await _clientRequestRepo.GetUserAccount(model.accountNo);
+                                if (accountEntity != null)
+                                {
+                                    decimal amount = Convert.ToDecimal(responseObj.data.availableBalance);
+                                    decimal newBalance = await UpdateSourceAccountBalance(accountEntity, amount);
+                                }
+                                else
+                                {
+                                    respObj.IsSuccessful = false;
+                                    respObj.Data = null;
+                                }
+
+                                respObj.ResponseCode = (int)response.StatusCode;
+                                respObj.Message = responseObj.message;
                             }
                             else
                             {
                                 respObj.IsSuccessful = false;
+                                apiResponse = await response.Content.ReadAsStringAsync();
+                                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                                respObj.Message = responseObj.message;
                                 respObj.Data = null;
+                                respObj.ResponseCode = (int)response.StatusCode;
                             }
-
-                            respObj.ResponseCode = (int)response.StatusCode;
-                            respObj.Message = responseObj.message;
-                        }
-                        else
-                        {
-                            respObj.IsSuccessful = false;
-                            string apiResponse = await response.Content.ReadAsStringAsync();
-                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                            respObj.Message = responseObj.message;
-                            respObj.Data = null;
-                            respObj.ResponseCode = (int)response.StatusCode;
                         }
                     }
                 }
@@ -320,10 +379,23 @@ namespace AscomPayPG.Services
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+
+                        var log = new ExternalIntegrationLog
+                        {
+                            CreatedBy = model.accountNo,
+                            RequestTime = DateTime.Now,
+                            RequestPayload = JsonConvert.SerializeObject(model),
+                            Response = apiResponse,
+                            ResponseTime = DateTime.Now,
+                            Service = "Payment",
+                            Vendor = "9PSB",
+                        };
+                        _context.ExternalIntegrationLogs.Add(log);
+                        _context.SaveChanges();
                         if (response.IsSuccessStatusCode)
                         {
 
-                            string apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             if ((int)response.StatusCode == StatusCodes.Status200OK)
                             {
@@ -342,7 +414,7 @@ namespace AscomPayPG.Services
                         else
                         {
                             respObj.IsSuccessful = false;
-                            string apiResponse = await response.Content.ReadAsStringAsync();
+                            apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             respObj.Message = responseObj.message;
                             respObj.Data = null;
@@ -393,10 +465,23 @@ namespace AscomPayPG.Services
                     StringContent content = new StringContent(JsonConvert.SerializeObject(getWalletRequest), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+
+                        var log = new ExternalIntegrationLog
+                        {
+                            CreatedBy = model.accountNo,
+                            RequestTime = DateTime.Now,
+                            RequestPayload = JsonConvert.SerializeObject(model),
+                            Response = apiResponse,
+                            ResponseTime = DateTime.Now,
+                            Service = "Payment",
+                            Vendor = "9PSB",
+                        };
+                        _context.ExternalIntegrationLogs.Add(log);
+                        _context.SaveChanges();
                         if (response.IsSuccessStatusCode)
                         {
 
-                            string apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             if ((int)response.StatusCode == StatusCodes.Status200OK)
                             {
@@ -415,7 +500,7 @@ namespace AscomPayPG.Services
                         else
                         {
                             respObj.IsSuccessful = false;
-                            string apiResponse = await response.Content.ReadAsStringAsync();
+                            apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             respObj.Message = responseObj.message;
                             respObj.Data = null;
@@ -515,10 +600,23 @@ namespace AscomPayPG.Services
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+
                         if (response.IsSuccessStatusCode)
                         {
+                            var log = new ExternalIntegrationLog
+                            {
+                                CreatedBy = model.accountNumber,
+                                RequestTime = DateTime.Now,
+                                RequestPayload = JsonConvert.SerializeObject(model),
+                                Response = apiResponse,
+                                ResponseTime = DateTime.Now,
+                                Service = "Payment",
+                                Vendor = "9PSB",
+                            };
+                            _context.ExternalIntegrationLogs.Add(log);
+                            _context.SaveChanges();
 
-                            string apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             if ((int)response.StatusCode == StatusCodes.Status200OK)
                             {
@@ -537,7 +635,7 @@ namespace AscomPayPG.Services
                         else
                         {
                             respObj.IsSuccessful = false;
-                            string apiResponse = await response.Content.ReadAsStringAsync();
+                            apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             respObj.Message = responseObj.message;
                             respObj.Data = null;
@@ -576,10 +674,23 @@ namespace AscomPayPG.Services
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+
+                        var log = new ExternalIntegrationLog
+                        {
+                            CreatedBy = model.accountNo,
+                            RequestTime = DateTime.Now,
+                            RequestPayload = JsonConvert.SerializeObject(model),
+                            Response = apiResponse,
+                            ResponseTime = DateTime.Now,
+                            Service = "Payment",
+                            Vendor = "9PSB",
+                        };
+                        _context.ExternalIntegrationLogs.Add(log);
+                        _context.SaveChanges();
                         if (response.IsSuccessStatusCode)
                         {
 
-                            string apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             if ((int)response.StatusCode == StatusCodes.Status200OK)
                             {
@@ -598,7 +709,7 @@ namespace AscomPayPG.Services
                         else
                         {
                             respObj.IsSuccessful = false;
-                            string apiResponse = await response.Content.ReadAsStringAsync();
+                            apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             respObj.Message = responseObj.message;
                             respObj.Data = null;
@@ -638,10 +749,23 @@ namespace AscomPayPG.Services
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+
+                        var log = new ExternalIntegrationLog
+                        {
+                            CreatedBy = model.accountNo,
+                            RequestTime = DateTime.Now,
+                            RequestPayload = JsonConvert.SerializeObject(model),
+                            Response = apiResponse,
+                            ResponseTime = DateTime.Now,
+                            Service = "Payment",
+                            Vendor = "9PSB",
+                        };
+                        _context.ExternalIntegrationLogs.Add(log);
+                        _context.SaveChanges();
                         if (response.IsSuccessStatusCode)
                         {
 
-                            string apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             if ((int)response.StatusCode == StatusCodes.Status200OK)
                             {
@@ -660,7 +784,7 @@ namespace AscomPayPG.Services
                         else
                         {
                             respObj.IsSuccessful = false;
-                            string apiResponse = await response.Content.ReadAsStringAsync();
+                            apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             respObj.Message = responseObj.message;
                             respObj.Data = null;

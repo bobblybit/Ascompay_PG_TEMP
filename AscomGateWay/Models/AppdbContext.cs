@@ -46,6 +46,7 @@ public class AppdbContext : DbContext
     public DbSet<UserPasswordHistory> UserPasswordHistories { get; set; }
     public DbSet<UserDeviceInformation> UserDeviceInformation { get; set; }
     public DbSet<UserDeviceAuthentication> UserDeviceAuthentication { get; set; }
+    public DbSet<ExternalIntegrationLog> ThirdPartyCallLogs { get; set; }
 
     public AppdbContext()
 	{
