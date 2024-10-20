@@ -630,7 +630,7 @@ namespace AscomPayPG.Services.Implementation
             {
 
                 var accountEntity = await _clientRequestRepo.GetUserAccount(payload.accountnumber);
-                var hookEntity = await _context.Webhook.FirstOrDefaultAsync(x => x.Reference == payload.transactionref);
+                var hookEntity = _context.Webhook.FirstOrDefault(x => x.Reference == payload.transactionref);
                 if(hookEntity == null)
                 {
                     if (accountEntity != null)
