@@ -5,13 +5,9 @@ using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
-using AscomPayPG.Services.Interface;
 using Microsoft.EntityFrameworkCore;
-using Nancy.Diagnostics;
 using Newtonsoft.Json;
-using System;
 using System.Dynamic;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace AscomPayPG.Services
@@ -896,6 +892,16 @@ namespace AscomPayPG.Services
                 };
             }
 
+            if ((decimal)sourceAccount.CurrentBalance < (decimal.Parse(model.Amount) + vat + charges))
+            {
+                return new PlainResponse
+                {
+                    IsSuccessful = false,
+                    Message = "insufficient balance",
+                    Data = 0,
+                };
+            }
+
             try
             {
                 respAccessToken = await GetAccessToken();
@@ -908,7 +914,7 @@ namespace AscomPayPG.Services
                 
                 payload.customer.account = new Models.WAAS.Account { 
                     bank = model.bank,
-                    senderAccountNumber = model.senderAccountNumber,
+                    senderaccountnumber = model.senderAccountNumber,
                     number = model.RecieverNumber,
                     name = model.RecieverName,
                     sendername = externalUsers != null ? externalUsers.name : "N/A",
@@ -916,7 +922,7 @@ namespace AscomPayPG.Services
                 payload.order.country = "NGN";
                 payload.order.currency = "Nigeria";
                 payload.transaction.sessionId = "";
-                payload.transaction.reference = Guid.NewGuid().ToString().Substring(0,8);
+                payload.transaction.reference = Guid.NewGuid().ToString().Replace("-", "").ToUpper();
                 payload.merchant.merchantFeeAmount = model.Amount;
                 payload.merchant.merchantFeeAccount = "";
                 payload.narration = model.Narration;
@@ -953,15 +959,15 @@ namespace AscomPayPG.Services
                     StringContent content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
+
+                        externalIntegrationLog.Response = await response.Content.ReadAsStringAsync();
+                        externalIntegrationLog.ResponseTime = DateTime.Now;
+                        _context.ExternalIntegrationLogs.Add(externalIntegrationLog);
+                        _context.SaveChanges();
+
                         if (response.IsSuccessStatusCode)
                         {
                             string apiResponse = await response.Content.ReadAsStringAsync();
-
-                            externalIntegrationLog.Response = apiResponse;
-                            externalIntegrationLog.ResponseTime = DateTime.Now;
-
-                            _context.ExternalIntegrationLogs.Add(externalIntegrationLog);
-                            _context.SaveChanges();
 
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             if ((int)response.StatusCode == StatusCodes.Status200OK)
@@ -974,7 +980,7 @@ namespace AscomPayPG.Services
                                 var newTransaction = new Transactions()
                                 {
                                     UserId = sender.UserId,
-                                    RequestTransactionId = payload.transaction.reference + TransactionTypes.TransferToAscomUsers.ToString() + DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff"),
+                                    RequestTransactionId = payload.transaction.reference,
                                     UserUID = sender.UserUid,
                                     Status = PaymentStatus.Approved.ToString(),
                                     StatusId = 1,
@@ -983,10 +989,10 @@ namespace AscomPayPG.Services
                                     Amount = Decimal.Parse(model.Amount),
                                     Email = !string.IsNullOrEmpty(sender.Email) ? sender.Email : string.Empty,
                                     Description = model.Description,
-                                    TransactionType = TransactionTypes.TransferToAscomUsers.ToString(),
+                                    TransactionType = TransactionTypes.TransferToOthersBanks.ToString(),
                                     SourceAccount = model.senderAccountNumber,
                                     DestinationAccount = model.RecieverNumber,
-                                    PaymentAction = PaymentActionType.Internal9PSB.ToString(),
+                                    PaymentAction = PaymentActionType.External9PSB.ToString(),
                                     BankCode = (int)BankCodes.Ascom,
                                     T_Vat = vat,
                                     T_Charge = charges

@@ -12,6 +12,12 @@ namespace AscomPayPG.Helpers
                 return propertyName.ToLower(); // Keep 'sendername' in lowercase
             }
 
+            // Keep 'sendername' in lowercase and others in camelCase
+            if (propertyName.Equals("senderaccountnumber", StringComparison.OrdinalIgnoreCase))
+            {
+                return propertyName.ToLower(); // Keep 'sendername' in lowercase
+            }
+
             return base.ResolvePropertyName(propertyName); // Use camelCase for others
         }
     }

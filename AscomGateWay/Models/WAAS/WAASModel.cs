@@ -275,7 +275,7 @@ namespace AscomPayPG.Models.WAAS
         public string bank { get; set; }
         public string name { get; set; }
         public string number { get; set; }
-        public string senderAccountNumber { get; set; }
+        public string senderaccountnumber { get; set; }
         public string sendername { get; set; }
     }
 
