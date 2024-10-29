@@ -6,6 +6,7 @@ namespace AscomPayPG.Models.Shared
         Payment = 1,
         ReQuery,
         Internal,
-        External9PSB
+        External9PSB,
+        Internal9PSB
     }
 }

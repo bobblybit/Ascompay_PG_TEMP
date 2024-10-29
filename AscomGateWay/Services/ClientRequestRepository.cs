@@ -98,7 +98,7 @@ namespace AscomPayPG.Services
         }
 
         public async Task<Account> GetUserAccount(string destination)
-                 => await _context.Accounts.FirstOrDefaultAsync(x => x.AccountNumber == destination);
+                 => await _context.Accounts.FirstOrDefaultAsync(x => x.AccountNumber == destination || x.AccountId == Convert.ToInt64(destination));
         public async Task<Account> GetUserAccountByUserUid(string userUid)
                 => await _context.Accounts.FirstOrDefaultAsync(x => x.UserUid == Guid.Parse(userUid));
 
