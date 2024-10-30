@@ -1,4 +1,4 @@
-namespace DB_MODALS.Entities;
+namespace AscomPayPG.Models.Notification;
 
 public class SMTPConfiguration
 {

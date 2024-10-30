@@ -1,7 +1,4 @@
-﻿using AscomPayPG.Models.DTO;
-using AscomPayPG.Models.DTOs;
-using AscomPayPG.Models.GTPay;
-using AscomPayPG.Models.Shared;
+﻿using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
 
 namespace AscomPayPG.Services.Interface

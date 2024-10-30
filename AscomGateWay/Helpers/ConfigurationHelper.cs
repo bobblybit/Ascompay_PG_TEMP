@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common
+namespace AscomPayPG.Helpers
 {
     public class ConfigurationHelper
     {
@@ -13,8 +13,8 @@ namespace Common
         public static void InstantaiteConfiguration(IConfiguration configuration) => _configuration = configuration;
         public static IConfiguration GetConfigurationInstance() => _configuration;
 
-        public static string GetAppSettingSectionSingleProperty(string sectionNameAndProperty) 
+        public static string GetAppSettingSectionSingleProperty(string sectionNameAndProperty)
             => _configuration.GetSection(key: sectionNameAndProperty).Value;
-        
+
     }
 }

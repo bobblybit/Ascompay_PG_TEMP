@@ -1,5 +1,5 @@
 ﻿using AscomPayPG.Data.Repository.Interface;
-using AscomPayPG.Models.DTOs;
+using AscomPayPG.Models.DTO;
 
 namespace AscomPayPG.Data.Repository.Implementation
 {

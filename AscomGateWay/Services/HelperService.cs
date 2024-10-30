@@ -2,11 +2,11 @@ using System.Net;
 using Polly;
 using System.Text;
 using AscomPayPG.Models;
-using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
 using Newtonsoft.Json;
 using RestSharp;
 using AscomPayPG.Data;
+using AscomPayPG.Models.DTO;
 
 namespace AscomPayPG.Services
 {

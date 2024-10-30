@@ -1,5 +1,5 @@
 ﻿using AscomPayPG.Models;
-using AscomPayPG.Models.DTOs;
+using AscomPayPG.Models.DTO;
 using Microsoft.EntityFrameworkCore;
 
 namespace AscomPayPG.Data

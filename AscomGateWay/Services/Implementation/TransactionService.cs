@@ -4,14 +4,11 @@ using AscomPayPG.Data.Repository.Interface;
 using AscomPayPG.Helpers;
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
-using AscomPayPG.Models.DTOs;
 using AscomPayPG.Models.GTPay;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
+using AscomPayPG.Services.Gateways;
 using AscomPayPG.Services.Interface;
-using Microsoft.EntityFrameworkCore;
-using SERVICES.Helpers;
-using SERVICES.Services.Interface.Notification;
 using System.Text.Json;
 
 namespace AscomPayPG.Services.Implementation
@@ -708,12 +705,15 @@ namespace AscomPayPG.Services.Implementation
 
             return response;
         }
-        public async Task<PlainResponse> AccountLookup(accountLookupRequest accountLookupRequest, string userUid)
+
+        public async Task<AccountLookUpResponse> AccountLookup(accountLookupRequest accountLookupRequest, string userUid)
         {
-            PlainResponse response = new PlainResponse();
+            var response = new AccountLookUpResponse();
             try
             {
-                var appUser = _context.Users.Where(x => x.UserUid == Guid.Parse(userUid)).FirstOrDefault();
+                return  await waas.AccountLookup9PSB(accountLookupRequest, userUid);
+
+                /*var appUser = _context.Users.Where(x => x.UserUid == Guid.Parse(userUid)).FirstOrDefault();
                 if (appUser == null)
                 {
                     response.Data = null;
@@ -736,7 +736,7 @@ namespace AscomPayPG.Services.Implementation
                     response.IsSuccessful = resp.IsSuccessful;
                     response.Message = resp.Message;
                     response.ResponseCode = resp.ResponseCode;
-                }
+                }*/
             }
             catch (Exception ex)
             {
@@ -918,7 +918,7 @@ namespace AscomPayPG.Services.Implementation
                         SourceAccount = requestModel.SenderAccountOrWallet,
                         DestinationAccount = requestModel.IsAccount ? requestModel.ReceiverAccount : null,
                         DestinationWallet = !requestModel.IsAccount ? requestModel.ReceiverAccount : null,
-                        PaymentAction = PaymentActionType.Internal9PSB.ToString(),
+                        PaymentAction = PaymentActionType.External9PSB.ToString(),
                         BankCode = (int)BankCodes.Ascom,
                         T_Vat = vat,
                         T_Charge = charges

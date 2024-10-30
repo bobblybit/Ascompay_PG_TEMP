@@ -8,9 +8,10 @@ using AscomPayPG.Models.WAAS;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Dynamic;
+using System.Runtime.InteropServices;
 using System.Text;
 
-namespace AscomPayPG.Services
+namespace AscomPayPG.Services.Gateways
 {
     public class WAAS
     {
@@ -20,7 +21,7 @@ namespace AscomPayPG.Services
 
         private readonly ILogger<WAAS> _logger;
 
-        public WAAS(IConfiguration configuration, 
+        public WAAS(IConfiguration configuration,
                     AppDbContext context, IClientRequestRepository<ClientRequest> clientRequestRepo)
         {
             _configuration = configuration;
@@ -43,7 +44,7 @@ namespace AscomPayPG.Services
                 requestData.clientSecret = _configuration["WAASConfiguration:ClientSecret"];
                 string fullUrl = string.Empty;
 
-            
+
                 dynamic responseObj = new ExpandoObject();
                 using (var httpClient = new HttpClient())
                 {
@@ -130,7 +131,7 @@ namespace AscomPayPG.Services
 
                             requestData.accountName = $"{appUser.FirstName} {appUser.LastName}";
                             requestData.bvn = bvn;
-                            requestData.dateOfBirth = appUser.DateOfBirth != null ? appUser.DateOfBirth.Value.ToString("dd/MM/yyyy").Replace("-","/") : DateTime.Now.AddYears(-20).ToString("dd/MM/yyyy").Replace("-", "/"); // "01/01/2000";
+                            requestData.dateOfBirth = appUser.DateOfBirth != null ? appUser.DateOfBirth.Value.ToString("dd/MM/yyyy").Replace("-", "/") : DateTime.Now.AddYears(-20).ToString("dd/MM/yyyy").Replace("-", "/"); // "01/01/2000";
                             requestData.gender = "1";
                             requestData.lastName = appUser.LastName;
                             requestData.otherNames = appUser.FirstName == null ? "N/A" : appUser.FirstName;
@@ -174,7 +175,7 @@ namespace AscomPayPG.Services
                                     responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                                     if ((int)response.StatusCode == StatusCodes.Status200OK)
                                     {
-                                        if(responseObj.status == "SUCCESS")
+                                        if (responseObj.status == "SUCCESS")
                                         {
                                             respObj.IsSuccessful = true;
                                             respObj.Data = responseObj.data;
@@ -223,7 +224,7 @@ namespace AscomPayPG.Services
                                             respObj.Data = null;
                                             respObj.Message = responseObj.message;
                                         }
-                                       
+
                                     }
                                     else
                                     {
@@ -253,7 +254,7 @@ namespace AscomPayPG.Services
                         respObj.Data = null;
                         return respObj;
                     }
-                  
+
                 }
                 else
                 {
@@ -262,7 +263,7 @@ namespace AscomPayPG.Services
                     respObj.Data = null;
                     return respObj;
                 }
-                
+
             }
             catch (Exception ex)
             {
@@ -275,7 +276,7 @@ namespace AscomPayPG.Services
         }
         public async Task<PlainResponse> WalletEnquiry(WalletRequest model)
         {
-           
+
             PlainResponse respObj = new PlainResponse();
             PlainResponse respAccessToken = new PlainResponse();
             string bvn = string.Empty;
@@ -441,7 +442,7 @@ namespace AscomPayPG.Services
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
                 var walletEntity = await _context.UserExternalWallets.FirstOrDefaultAsync(x => x.nuban == model.accountNo);
-                if(walletEntity == null)
+                if (walletEntity == null)
                 {
                     respObj.IsSuccessful = false;
                     respObj.Message = "No records found for wallet";
@@ -526,7 +527,7 @@ namespace AscomPayPG.Services
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
-                
+
                 dynamic responseObj = new ExpandoObject();
                 using (var httpClient = new HttpClient())
                 {
@@ -892,7 +893,7 @@ namespace AscomPayPG.Services
                 };
             }
 
-            if ((decimal)sourceAccount.CurrentBalance < (decimal.Parse(model.Amount) + vat + charges))
+            if ((decimal)sourceAccount.CurrentBalance < decimal.Parse(model.Amount) + vat + charges)
             {
                 return new PlainResponse
                 {
@@ -910,9 +911,10 @@ namespace AscomPayPG.Services
                 string fullUrl = string.Empty;
 
                 var payload = new OtherBankTransfer();
-                var externalUsers = _context.UserExternalWallets.FirstOrDefault(user => user.nuban == model.senderAccountNumber);   
-                
-                payload.customer.account = new Models.WAAS.Account { 
+                var externalUsers = _context.UserExternalWallets.FirstOrDefault(user => user.nuban == model.senderAccountNumber);
+
+                payload.customer.account = new Models.WAAS.Account
+                {
                     bank = model.bank,
                     senderaccountnumber = model.senderAccountNumber,
                     number = model.RecieverNumber,
@@ -921,8 +923,8 @@ namespace AscomPayPG.Services
                 };
                 payload.order.country = "NGN";
                 payload.order.currency = "Nigeria";
-                payload.transaction.sessionId = "";
-                payload.transaction.reference = Guid.NewGuid().ToString().Replace("-", "").ToUpper();
+                payload.transaction.sessionId = "";/*= Guid.NewGuid().ToString().Substring(0,16).Replace("-", "").ToUpper()*/
+                payload.transaction.reference = Guid.NewGuid().ToString().Substring(0, 16).Replace("-", "").ToUpper();
                 payload.merchant.merchantFeeAmount = model.Amount;
                 payload.merchant.merchantFeeAccount = "";
                 payload.narration = model.Narration;
@@ -970,7 +972,8 @@ namespace AscomPayPG.Services
                             string apiResponse = await response.Content.ReadAsStringAsync();
 
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                            if ((int)response.StatusCode == StatusCodes.Status200OK)
+                            //(responseObj.data.code == ""
+                            if (responseObj?.data.code == "00")
                             {
                                 respObj.IsSuccessful = true;
                                 respObj.Data = responseObj.data;
@@ -986,7 +989,7 @@ namespace AscomPayPG.Services
                                     StatusId = 1,
                                     Timestamp = DateTime.Now,
                                     AccessToken = Guid.NewGuid().ToString(),
-                                    Amount = Decimal.Parse(model.Amount),
+                                    Amount = decimal.Parse(model.Amount),
                                     Email = !string.IsNullOrEmpty(sender.Email) ? sender.Email : string.Empty,
                                     Description = model.Description,
                                     TransactionType = TransactionTypes.TransferToOthersBanks.ToString(),
@@ -998,9 +1001,8 @@ namespace AscomPayPG.Services
                                     T_Charge = charges
                                 };
 
-                                var transactionResponse =  _context.Transactions.Add(newTransaction);
+                                var transactionResponse = _context.Transactions.Add(newTransaction);
                                 await _context.SaveChangesAsync();
-
 
                             }
                             else
@@ -1076,14 +1078,117 @@ namespace AscomPayPG.Services
             {
 
                 if (transactionTypeDetails.By_Percent)
-                    return Math.Round((decimal)transactionTypeDetails.T_Percentage / 100 * amount, 1);
+                    return Math.Round(transactionTypeDetails.T_Percentage / 100 * amount, 1);
                 else
                     return transactionTypeDetails.T_Amount;
             }
             return 0;
         }
 
+        public async Task<AccountLookUpResponse> AccountLookup9PSB(accountLookupRequest accountLookupRequest, string userId)
+        {
+            //            PlainResponse respObj = new PlainResponse();
 
+            // check user
+            var sender = _context.Users.FirstOrDefault(x => x.UserUid.ToString() == userId);
+            if (sender == null)
+            {
+                return new AccountLookUpResponse
+                {
+                    IsSuccessful = false,
+                    Message = "user does exist",
+                    Data = null,
+                };
+            }
+            // check user account
+            var sourceAccount = await _context.Accounts.FirstOrDefaultAsync(x => x.UserUid.ToString() == userId);
+            if (sourceAccount == null)
+            {
+                return new AccountLookUpResponse
+                {
+                    IsSuccessful = false,
+                    Message = "user account account does exist",
+                    Data = null,
+                };
+            }
+
+
+            var requestPayLoad = new Root9PSBAccVerificationPayLoad();
+            requestPayLoad.customer.account.senderaccountnumber = sourceAccount.AccountNumber;
+            requestPayLoad.customer.account.number = accountLookupRequest.account_number;
+            requestPayLoad.customer.account.bank = accountLookupRequest.bank_code;
+
+            var respAccessToken = await GetAccessToken();
+            string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
+            string version = _configuration["WAASConfiguration:Version"];
+            string fullUrl = string.Empty;
+
+            dynamic responseObj = new ExpandoObject();
+            using (var httpClient = new HttpClient())
+            {
+                httpClient.DefaultRequestHeaders.Accept.Clear();
+                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                fullUrl = $"{baseUrl}api/{version}/other_banks_enquiry";
+
+                var payloadLoadAsJsonString = JsonConvert.SerializeObject(requestPayLoad);
+
+                ExternalIntegrationLog externalIntegrationLog = new ExternalIntegrationLog
+                {
+                    CreatedBy = userId,
+                    DateCreated = DateTime.Now,
+                    RequestTime = DateTime.Now,
+                    RequestPayload = payloadLoadAsJsonString,
+                    Vendor = "9PSB",
+                    Service = "Wallet/other_banks_enquiry"
+                };
+
+                StringContent content = new StringContent(payloadLoadAsJsonString, Encoding.UTF8, "application/json");
+                AccountLookUpResponse accountLookUpResponse = new AccountLookUpResponse();
+
+
+
+                using (var response = await httpClient.PostAsync(fullUrl, content))
+                {
+
+                    externalIntegrationLog.Response = await response.Content.ReadAsStringAsync();
+                    externalIntegrationLog.ResponseTime = DateTime.Now;
+                    _context.ExternalIntegrationLogs.Add(externalIntegrationLog);
+                    _context.SaveChanges();
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+
+                        responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                        if (responseObj?.code == "00")
+                        {
+                            accountLookUpResponse.IsSuccessful = true;
+                            accountLookUpResponse.ResponseCode = StatusCodes.Status200OK;
+                            accountLookUpResponse.Message = responseObj.message;
+                            accountLookUpResponse.Data.account_number = responseObj.customer.account.number;
+                            accountLookUpResponse.Data.account_name = responseObj.customer.account.name;
+                            return accountLookUpResponse;
+                        }
+                        else
+                        {
+                            accountLookUpResponse.IsSuccessful = false;
+                            accountLookUpResponse.Data = null;
+                            accountLookUpResponse.ResponseCode = StatusCodes.Status400BadRequest;
+                            accountLookUpResponse.Message = responseObj.message;
+                            return accountLookUpResponse;
+                        }
+                    }
+                    else
+                    {
+                        accountLookUpResponse.IsSuccessful = false;
+                        accountLookUpResponse.Data = null;
+                        accountLookUpResponse.ResponseCode = StatusCodes.Status400BadRequest;
+                        accountLookUpResponse.Message = responseObj.message;
+                        return accountLookUpResponse;
+                    }
+                }
+            }
+        }
 
     }
 }

@@ -3,13 +3,12 @@ using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Paystack;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.ViewModels;
-using AscomPayPG.Services.Gateways;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using RestSharp;
 using System;
 
-namespace AscomPayPG.Services
+namespace AscomPayPG.Services.Gateways
 {
     public class Paystack : IPaystack
     {
@@ -57,9 +56,9 @@ namespace AscomPayPG.Services
                 string payKey = _configuration["GatewayOptions:Paystack:Key"];
                 Guid Token = Guid.Parse(_configuration["App:decrpt:TokenData"]);
 
-                ResponseMessage paystackKey = await _encode.decrypt(payKey,3,Token);
+                ResponseMessage paystackKey = await _encode.decrypt(payKey, 3, Token);
 
-                if(paystackKey.isOk == false) throw new Exception($"Payment Initialization failed. {paystackKey.Message}");
+                if (paystackKey.isOk == false) throw new Exception($"Payment Initialization failed. {paystackKey.Message}");
 
 
                 PaystackPayRequest requestData = new PaystackPayRequest();
@@ -138,7 +137,7 @@ namespace AscomPayPG.Services
                     string payKey = _configuration["GatewayOptions:Paystack:Key"];
                     Guid Token = Guid.Parse(_configuration["App:decrpt:TokenData"]);
 
-                    ResponseMessage paystackKey = await _encode.decrypt(payKey ,3, Token);
+                    ResponseMessage paystackKey = await _encode.decrypt(payKey, 3, Token);
 
                     if (paystackKey.isOk == false) throw new Exception($"Payment Initialization failed. {paystackKey.Message}");
 
@@ -166,8 +165,8 @@ namespace AscomPayPG.Services
                     if (responseModel.status == true && responseModel.data.status.ToLower() == "success")
                     {
                         //handle success 
-                        payRequest.Status = PaymentStatus.Approved.ToString(); 
-                        payRequest.StatusId = 4; 
+                        payRequest.Status = PaymentStatus.Approved.ToString();
+                        payRequest.StatusId = 4;
                         payRequest.TransactionStatus = true;
                         payRequest.UpdatedAt = DateTime.Now;
 

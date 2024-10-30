@@ -1,6 +1,5 @@
 ﻿using AscomPayPG.Data;
 using AscomPayPG.Models.DTO;
-using AscomPayPG.Models.DTOs;
 using AscomPayPG.Models.GTPay;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Interface;

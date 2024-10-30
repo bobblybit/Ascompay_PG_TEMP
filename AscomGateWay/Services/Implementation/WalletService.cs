@@ -2,6 +2,7 @@
 using AscomPayPG.Models;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
+using AscomPayPG.Services.Gateways;
 using AscomPayPG.Services.Interface;
 
 namespace AscomPayPG.Services.Implementation

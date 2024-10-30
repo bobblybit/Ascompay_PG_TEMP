@@ -1,12 +1,11 @@
-using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace AscomPayPG.Models;
+namespace AscomPayPG.Models.DTO;
 
-public class AgentUser : BaseEntity
+public class User : BaseEntity
 {
     [Key]
     public long UserId { get; set; }
@@ -60,6 +59,7 @@ public class AgentUser : BaseEntity
     public bool? OnlineStaus { get; set; }
     public bool TwoFactorEnabled { get; set; }
     public bool? IsNotificationEnabled { get; set; }
+    public bool? IsAgent { get; set; }
     public bool? IsKycVerified { get; set; }
     public string? CompanyCode { get; set; }
     public string? UserCode { get; set; }
@@ -67,25 +67,8 @@ public class AgentUser : BaseEntity
     public DateTime? LastUpdated { get; set; }
     public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
 
-
-    public virtual ICollection<EncryptedPayment> EncryptedPayments { get; set; } = new List<EncryptedPayment>();
-
-
-    public virtual ICollection<TransactionModel> Transactions { get; set; } = new List<TransactionModel>();
-
+    public virtual ICollection<Transactions> Transactions { get; set; } = new List<Transactions>();
 
     public virtual ICollection<TransactionsLog> TransactionsLogs { get; set; } = new List<TransactionsLog>();
-
-
-    public virtual ICollection<UserActivityHistory> UserActivityHistories { get; set; } = new List<UserActivityHistory>();
-
-
-    public virtual ICollection<UserImage> UserImages { get; set; } = new List<UserImage>();
-
-
-    public virtual ICollection<UserKyc> UserKycs { get; set; } = new List<UserKyc>();
-
-
-    public virtual ICollection<UserWallet> UserWallets { get; set; } = new List<UserWallet>();
 
 }

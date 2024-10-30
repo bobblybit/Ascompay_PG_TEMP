@@ -1,4 +1,4 @@
-﻿using AscomPayPG.Models.DTOs;
+﻿using AscomPayPG.Models.DTO;
 
 namespace AscomPayPG.Data.Repository.Interface
 {

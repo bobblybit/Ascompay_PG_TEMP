@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using System.Text;
 
-namespace CSTP.UserAuthenticator.Extensions
+namespace AscomPayPG.Helpers
 {
     public static class SessionExtension
     {

@@ -1,7 +1,6 @@
 using AscomPayPG.Data;
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
-using AscomPayPG.Models.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace AscomPayPG.Services

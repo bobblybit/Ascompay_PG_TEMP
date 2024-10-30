@@ -1,11 +1,11 @@
 using System.Net.Mail;
 using System.Net;
-using DB_MODALS.Entities;
-using Common;
 using MimeKit;
-using SERVICES.Services.Interface.Notification;
+using AscomPayPG.Helpers;
+using AscomPayPG.Services.Interface;
+using AscomPayPG.Models.Notification;
 
-namespace SERVICES.Services.Implementation.Notifiacation;
+namespace AscomPayPG.Services.Implementation;
 
 public class EmailNotification : IEmailNotification
 {
@@ -54,7 +54,7 @@ public class EmailNotification : IEmailNotification
     public async Task<bool> SendEmail(string DisplayName, string Subject, string HTMLMessage, List<string> Receivers)
     {
         bool mailSent = false;
-        System.Net.Mail.SmtpClient client = new System.Net.Mail.SmtpClient(_smtpConfiguration.SmtpServer, _smtpConfiguration.PortNumber);
+        SmtpClient client = new SmtpClient(_smtpConfiguration.SmtpServer, _smtpConfiguration.PortNumber);
         client.EnableSsl = _smtpConfiguration.EnableSSL; // also iis has a default session time out, but i don't think that should be causing this
         client.Timeout = 200000;
         client.DeliveryMethod = SmtpDeliveryMethod.Network;

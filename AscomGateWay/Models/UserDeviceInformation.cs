@@ -1,5 +1,4 @@
-﻿
-using AscomPayPG.Models.DTO;
+﻿using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
 using System.ComponentModel.DataAnnotations.Schema;
 

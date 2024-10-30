@@ -1,15 +1,13 @@
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
-using AscomPayPG.Models.DTOs;
 using AscomPayPG.Models.GTPay;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.ViewModels;
-using AscomPayPG.Services.Gateways;
 using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace AscomPayPG.Services
+namespace AscomPayPG.Services.Gateways
 {
     public class GTPay : IGTPay
     {
@@ -57,7 +55,7 @@ namespace AscomPayPG.Services
                 string gtpublicKey = _configuration["GatewayOptions:GTPay:PublicKey"];
                 Guid Token = Guid.Parse(_configuration["App:decrpt:TokenData"]);
 
-                ResponseMessage publicKey = await _encode.decrypt(gtpublicKey,3, Token);
+                ResponseMessage publicKey = await _encode.decrypt(gtpublicKey, 3, Token);
 
                 if (publicKey.isOk == false) throw new Exception($"Payment Initialization failed. {publicKey.Message}");
 
@@ -116,7 +114,7 @@ namespace AscomPayPG.Services
                 result.TransactionsAmount = dbTransactions.Amount;
                 result.Gateway = dbTransactions.PaymentGateway.Name!;
                 result.Reference = dbTransactions.RequestTransactionId!;
-                result.RequestingClientUrl = string.IsNullOrEmpty(dbTransactions.CallbackURL) ? _configuration["App:HomePage"] : dbTransactions.CallbackURL; 
+                result.RequestingClientUrl = string.IsNullOrEmpty(dbTransactions.CallbackURL) ? _configuration["App:HomePage"] : dbTransactions.CallbackURL;
                 result.Customer = dbTransactions.Email!;
 
                 result.Status = true;
@@ -185,7 +183,7 @@ namespace AscomPayPG.Services
                     GTPayQueryResponse? responseModel = JsonConvert.DeserializeObject<GTPayQueryResponse>(response.Data.First());
                     if (responseModel == null || responseModel?.status != 200) throw new Exception($"Payment verification failed. {responseModel?.message}");
                     if (responseModel.data.transaction_status.ToLower() == GTPayTransactionstatusEnum.Success.ToString().ToLower())
-                    {                        
+                    {
                         //handle success 
                         payRequest.Status = PaymentStatus.Approved.ToString();
                         payRequest.StatusId = 4;
@@ -204,7 +202,7 @@ namespace AscomPayPG.Services
                             //close request by updateing the status
 
                             checkClient.Status = true;
-                            checkClient.StatusDescription = PaymentStatus.Approved.ToString(); 
+                            checkClient.StatusDescription = PaymentStatus.Approved.ToString();
                             var UpdateClient = await _clientRequestRepo.Update(checkClient, checkClient.ClientRequestId);
 
                             _logger.LogInformation($"Found Transactions with ID {payRequest.TransactionId} for query update");
@@ -219,7 +217,7 @@ namespace AscomPayPG.Services
                             result.StatusDescription = payRequest.Status;
 
                             _logger.LogInformation($"Either Failed to find Transactions with ID {payRequest.TransactionId} Or DataBase Update Query failed");
-                        }               
+                        }
                     }
                     else
                     {
@@ -285,7 +283,7 @@ namespace AscomPayPG.Services
                 encrypted_body = "ViASuHLhO+SP3KtmcdAOis+3Obg54d5SgCFPFMcguYfkkYs/i44jeT5Dbx52TcOvHRp9HlnCoFwbATkEihzv2C8UyPoC38sRb90S5Z9Fq7vRwjDQz/hYi/nKbWA0btPr3A+UXhX1Nu5ek+TL0ENUC8W1ZX/FrowX3HQaYiwe3tU/Kfr2XvAGwT7IAx5CQBhpzL34faHP4jbwSVmSgVYmW5rd2ClWQ7WWJjDMakrqYJva8qd0vhkqSpyz2KywOV9t9zSHRx3VpbvlDsBdkNGr+4Axh/7Gspu3xo9mMOIdv73OzjN4VA/qQP+fQMCjU1pbS8oh81HjwkHjzC5SBhzR8IU8bsmvFUyzJMfDoJuUB+fs09SLW7pdfODwK5vB8LtdKPnAuTPlv5dHVAPeMG/ubtl/HOqCZs4axjuO557srw0GpKk86bwaVKt4IQ17nY/QCJFC273HWU1CawP7d3nQasRZf/TU7ra+fOjQBHQ7Gtz2Pnfp3gLljBKenMT4Cabks1X2/6ZQpd/yGFkloYdS7ZW3kEvrorjcyma4WNDmJfhcdR9XGsom6Y/M/n/gMMa0z2KPbHDRoEBeRYbQHcnu5LnGWzBA4Y4RMSTDesD876PDB1bOnMzNPrWYam6ZVRHz"
             };
 
-            String SerializedPayload = JsonConvert.SerializeObject(chargeResponse);
+            string SerializedPayload = JsonConvert.SerializeObject(chargeResponse);
             Console.WriteLine(SerializedPayload);
             string result = "";
             var secretKeyBytes = Encoding.UTF8.GetBytes("sandbox_sk_9ac9418e847972dd45f5fe845b5716ef305589808eda");

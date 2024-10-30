@@ -1,4 +1,4 @@
-﻿namespace AscomPayPG.Models.DTOs
+﻿namespace AscomPayPG.Models.DTO
 {
     public class TransactionRequestDto
     {

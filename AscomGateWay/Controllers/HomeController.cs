@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
-using AscomPayPG.Models.DTOs;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.ViewModels;
 using AscomPayPG.Services;

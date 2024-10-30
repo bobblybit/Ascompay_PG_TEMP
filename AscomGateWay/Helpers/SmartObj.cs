@@ -1,10 +1,8 @@
 ﻿using AscomPayPG.Data;
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
-using AscomPayPG.Models.DTOs;
 using AscomPayPG.Models.GTPay;
 using AscomPayPG.Models.Shared;
-using Common;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -144,6 +142,7 @@ namespace AscomPayPG.Helpers
             var bankList = await _context.Banks.ToListAsync();
             return bankList;
         }
+
         public async Task<PlainResponse> AccountLookup(accountLookupRequest accountLookupRequest)
         {
             PlainResponse respObj = new PlainResponse();

@@ -6,16 +6,15 @@ using AscomPayPG.Helpers;
 using AscomPayPG.Models;
 using AscomPayPG.Services;
 using AscomPayPG.Services.Gateways;
+using AscomPayPG.Services.Gateways.Implementation;
+using AscomPayPG.Services.Gateways.Interface;
 using AscomPayPG.Services.Implementation;
 using AscomPayPG.Services.Interface;
-using Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
-using SERVICES.Services.Implementation.Notifiacation;
-using SERVICES.Services.Interface.Notification;
 using Swashbuckle.AspNetCore.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -82,6 +81,9 @@ builder.Services.AddScoped<IRepository<PaymentGateway>, PaymentGatewayRepository
 builder.Services.AddScoped<IClientRequestRepository<ClientRequest>, ClientRequestRepository>();
 builder.Services.AddTransient<IEncodeValue, EncodeValue>();
 builder.Services.AddTransient<INotificationRepository, NotificationRepository>();
+builder.Services.AddTransient<IVasService, VasService>();
+builder.Services.AddTransient<I9psbVaS, Vas9PSB>();
+
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
