@@ -37,11 +37,8 @@ Guid Token = Guid.Parse(builder.Configuration["App:decrpt:TokenCon"]);
 EncodeValue encode = new EncodeValue();
 
 //var connection = await encode.decrypt(builder.Configuration.GetConnectionString("AppConnectionString"),1, Token);
-
 //if(connection.isOk == false) throw new Exception($"Connection Failed : {connection.Message}");
 var connection = builder.Configuration.GetConnectionString("AppConnectionString");
-
-
 
 builder.Services.AddDbContextPool<AppDbContext>(options =>
         options.UseSqlServer(connection.ToString(),

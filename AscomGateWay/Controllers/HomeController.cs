@@ -222,7 +222,7 @@ namespace AscomPayPG.Controllers
         }
 
         [HttpPost("transfer")]
-        [ValidateCustomToken]
+       // [ValidateCustomToken]
         public async Task<IActionResult> TransferFund([FromBody] TransferRequestDTO mdoel)
         {
             var reponse = await _transactionService.TransferFundFromAccountOrWalletToAccount9PSB(mdoel);

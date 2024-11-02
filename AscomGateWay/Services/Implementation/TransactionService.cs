@@ -853,7 +853,7 @@ namespace AscomPayPG.Services.Implementation
                         Data = 0,
                     };*/
 
-                if (requestModel.IsAccount)
+              /*  if (requestModel.IsAccount)
                 {
                     if (sourceAccount.CurrentBalance < requestModel.Amount + charges + vat)
                         return new PlainResponse
@@ -872,7 +872,7 @@ namespace AscomPayPG.Services.Implementation
                             Message = "Insufficient Balance",
                             Data = 0,
                         };
-                }
+                }*/
 
 
                 var TransferRequest9BSB = new OtherBankTransferDTO

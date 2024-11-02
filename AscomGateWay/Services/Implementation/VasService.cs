@@ -37,7 +37,7 @@ namespace AscomPayPG.Services.Implementation
                     };
                 }
 
-                if (account.CurrentBalance < decimal.Parse(requestModel.amount))
+              /*  if (account.CurrentBalance < decimal.Parse(requestModel.amount))
                 {
                     return new PlainResponse
                     {
@@ -46,7 +46,7 @@ namespace AscomPayPG.Services.Implementation
                         Message = "Insufficient balance",
                         ResponseCode = StatusCodes.Status400BadRequest
                     };
-                }
+                }*/
 
                 return await _vasService.PurchaseAirtime(requestModel);
             }
@@ -77,7 +77,7 @@ namespace AscomPayPG.Services.Implementation
                     };
                 }
 
-                if (account.CurrentBalance < decimal.Parse(requestModel.amount))
+              /*  if (account.CurrentBalance < decimal.Parse(requestModel.amount))
                 {
                     return new PlainResponse
                     {
@@ -86,7 +86,7 @@ namespace AscomPayPG.Services.Implementation
                         Message = "Insufficient balance",
                         ResponseCode = StatusCodes.Status400BadRequest
                     };
-                }
+                }*/
 
                 return await _vasService.PurchaseDataPlan(requestModel);
             }
@@ -153,7 +153,7 @@ namespace AscomPayPG.Services.Implementation
         {
             try
             {
-                var user = _appDbContext.Users.FirstOrDefault(acc => acc.UserUid.ToString() == requestModel.customerId);
+               /* var user = _appDbContext.Users.FirstOrDefault(acc => acc.UserUid.ToString() == requestModel.customerId);
                 if (user == null)
                 {
                     return new PlainResponse
@@ -165,9 +165,9 @@ namespace AscomPayPG.Services.Implementation
                     };
                 }
 
-                var account = _appDbContext.Accounts.FirstOrDefault(acc => acc.UserUid.ToString() == requestModel.customerId);
+                var account = _appDbContext.Accounts.FirstOrDefault(acc => acc.UserUid.ToString() == requestModel.customerId);*/
 
-                if (account?.CurrentBalance < decimal.Parse(requestModel.amount))
+               /* if (account?.CurrentBalance < decimal.Parse(requestModel.amount))
                 {
                     return new PlainResponse
                     {
@@ -176,7 +176,7 @@ namespace AscomPayPG.Services.Implementation
                         Message = "Insufficient balance",
                         ResponseCode = StatusCodes.Status400BadRequest
                     };
-                }
+                }*/
 
                 return await _vasService.VaildateBillerInputFields(requestModel);
             }

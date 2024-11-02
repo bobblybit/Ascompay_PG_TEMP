@@ -6,6 +6,7 @@ using AscomPayPG.Models.VasModels;
 using AscomPayPG.Services.Gateways.Interface;
 using Newtonsoft.Json;
 using System.Dynamic;
+using System.Net.Http;
 using System.Text;
 
 namespace AscomPayPG.Services.Gateways.Implementation
@@ -18,8 +19,8 @@ namespace AscomPayPG.Services.Gateways.Implementation
             {
                 dynamic responseObj = new ExpandoObject();
 
-                var userName = ConfigurationHelper.GetAppSettingSectionSingleProperty("9PSBVatConfiuration:Username");
-                var password = ConfigurationHelper.GetAppSettingSectionSingleProperty("9PSBVatConfiuration:Password");
+                var userName = ConfigurationHelper.GetAppSettingSectionSingleProperty("9PSBVasConfiuration:Username");
+                var password = ConfigurationHelper.GetAppSettingSectionSingleProperty("9PSBVasConfiuration:Password");
 
                 var payload = new AuthenticationRequestModeL { username = userName, password = password };
                 StringContent content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
@@ -28,7 +29,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                    if (responseObj?.code == "00")
+                    if (responseObj?.responseCode == "200")
                         return new VatAuthResponse { IsSuccessfull = true, Token = responseObj.data.accessToken };
                     else
                         return new VatAuthResponse { IsSuccessfull = false, Token = responseObj.message };
@@ -59,15 +60,16 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
                 
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var response = await RequestHelper.Get(NinePSBVatUrls.DataPlans.Replace("[phoneNumber]", phoneNumber), header);
+                var url = NinePSBVatUrls.DataPlans.Replace("[phoneNumber]", phoneNumber);
+                var response = await RequestHelper.Get(url, header);
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                    if (responseObj?.code == "00")
-                        return new PlainResponse {  IsSuccessful = true,  Message = responseObj.message, Data = responseObj.data };
-                    else
-                        return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                if (responseObj?.responseCode == "200")
+                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                else
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
             }
             catch (Exception ex)
             {
@@ -93,15 +95,16 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
 
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var response = await RequestHelper.Get(NinePSBVatUrls.PhoneNetworks.Replace("[phoneNumber]", phoneNumber), header);
+                var URL = NinePSBVatUrls.PhoneNetworks.Replace("[phoneNumber]", phoneNumber);
+                var response = await RequestHelper.Get(URL, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                if (responseObj?.code == "00")
+                if (responseObj?.responseCode == "200")
                     return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
                 else
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
             }
             catch (Exception ex)
             {
@@ -127,15 +130,16 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
 
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var response = await RequestHelper.Get(NinePSBVatUrls.TransactionStatus.Replace("[transReference]", transactionReferenceId), header);
+                var url = NinePSBVatUrls.TransactionStatus.Replace("[transReference]", transactionReferenceId);
+                var response = await RequestHelper.Get(url, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                if (responseObj?.code == "00")
+                if (responseObj?.responseCode == "200")
                     return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
                 else
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
             }
             catch (Exception ex)
             {
@@ -169,10 +173,10 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                if (responseObj?.code == "00")
+                if (responseObj?.responseCode == "200")
                     return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
                 else
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
             }
             catch (Exception ex)
             {
@@ -201,15 +205,27 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 var payloadLoadAsJsonString = JsonConvert.SerializeObject(requestModel);
                 StringContent content = new StringContent(JsonConvert.SerializeObject(payloadLoadAsJsonString), Encoding.UTF8, "application/json");
 
-                var response = await RequestHelper.PostWithBody(NinePSBVatUrls.DataPurchase, content, header);
+                var response =  RequestHelper.PostWithBodyA(NinePSBVatUrls.DataPurchase, header, content);
+                Console.WriteLine($"Response Content: {content}");
+
+                try
+                {
+                    string apiResponse2 = await response.Content.ReadAsStringAsync();
+
+                }
+                catch (Exception ex)
+                {
+
+                    throw;
+                }
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                if (responseObj?.code == "00")
+                if (responseObj?.responseCode == "200")
                     return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
                 else
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
             }
             catch (Exception ex)
             {
@@ -243,10 +259,10 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                if (responseObj?.code == "00")
+                if (responseObj?.responseCode == "200")
                     return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
                 else
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
             }
             catch (Exception ex)
             {
@@ -272,15 +288,16 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
 
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var response = await RequestHelper.Get(NinePSBVatUrls.CategoryBiller.Replace("[categoryId]", categoryId), header);
+                var url = NinePSBVatUrls.CategoryBiller.Replace("[categoryId]", categoryId);
+                var response = await RequestHelper.Get(url, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                if (responseObj?.code == "00")
+                if (responseObj?.responseCode == "200")
                     return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
                 else
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
             }
             catch (Exception ex)
             {
@@ -311,10 +328,10 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                if (responseObj?.code == "00")
+                if (responseObj?.responseCode == "200")
                     return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
                 else
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
             }
             catch (Exception ex)
             {
@@ -348,10 +365,10 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                if (responseObj?.code == "00")
+                if (responseObj?.responseCode == "200")
                     return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
                 else
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
             }
             catch (Exception ex)
             {
@@ -414,15 +431,16 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
 
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var response = await RequestHelper.Get(NinePSBVatUrls.BillPaymentStatus.Replace("[transReference]", transactionReferenceId), header);
+                var url = NinePSBVatUrls.BillPaymentStatus.Replace("[transReference]", transactionReferenceId);
+                var response = await RequestHelper.Get(url, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                if (responseObj?.code == "00")
+                if (responseObj?.responseCode == "200")
                     return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
                 else
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
             }
             catch (Exception ex)
             {

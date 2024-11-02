@@ -893,7 +893,7 @@ namespace AscomPayPG.Services.Gateways
                 };
             }
 
-            if ((decimal)sourceAccount.CurrentBalance < decimal.Parse(model.Amount) + vat + charges)
+          /*  if ((decimal)sourceAccount.CurrentBalance < decimal.Parse(model.Amount) + vat + charges)
             {
                 return new PlainResponse
                 {
@@ -901,7 +901,7 @@ namespace AscomPayPG.Services.Gateways
                     Message = "insufficient balance",
                     Data = 0,
                 };
-            }
+            }*/
 
             try
             {
@@ -915,7 +915,7 @@ namespace AscomPayPG.Services.Gateways
 
                 payload.customer.account = new Models.WAAS.Account
                 {
-                    bank = model.bank,
+                    bank = "120001",
                     senderaccountnumber = model.senderAccountNumber,
                     number = model.RecieverNumber,
                     name = model.RecieverName,

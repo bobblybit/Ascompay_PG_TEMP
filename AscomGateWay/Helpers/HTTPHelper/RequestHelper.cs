@@ -60,13 +60,39 @@ namespace AscomPayPG.Helpers.HTTPHelper
             }
         }
 
+        public static HttpResponseMessage PostWithBodyA(string url, Dictionary<string, string> headerNamesAndValue, HttpContent body)
+        {
+            try
+            {
+                using (var httpClient = new HttpClient())
+                {
+                    var client = BuildHeader(httpClient, headerNamesAndValue);
+                    HttpResponseMessage response = client.PostAsync(url, body).Result;
+                    return response;
+                }
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+        }
+
         public static async Task<HttpResponseMessage> PostWithBody(string url, Dictionary<string, string> headerNamesAndValue, HttpContent body)
         {
-            using (var httpClient = new HttpClient())
+            try
             {
-                var client = BuildHeader(httpClient, headerNamesAndValue);
-                HttpResponseMessage response = await client.PostAsync(url, body);
-                return response;
+                using (var httpClient = new HttpClient())
+                {
+                    var client = BuildHeader(httpClient, headerNamesAndValue);
+                    HttpResponseMessage response = await client.PostAsync(url, body);
+                    return response;
+                }
+            }
+            catch (Exception ex)
+            {
+
+                throw;
             }
         }
 
