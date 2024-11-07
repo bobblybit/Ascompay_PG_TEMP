@@ -134,7 +134,7 @@ namespace AscomPayPG.Services.Gateways
                             requestData.dateOfBirth = appUser.DateOfBirth != null ? appUser.DateOfBirth.Value.ToString("dd/MM/yyyy").Replace("-", "/") : DateTime.Now.AddYears(-20).ToString("dd/MM/yyyy").Replace("-", "/"); // "01/01/2000";
                             requestData.gender = "1";
                             requestData.lastName = appUser.LastName;
-                            requestData.otherNames = appUser.FirstName == null ? "N/A" : appUser.FirstName;
+                            requestData.otherNames = appUser.MiddleName == null ? "N/A" : appUser.MiddleName;
                             requestData.phoneNo = appUser.PhoneNumber;
                             requestData.transactionTrackingRef = userUid.Split("-").Last();  //DateTime.Now.Ticks.ToString(); //userUid.Split("-").Last();
                             requestData.placeOfBirth = "NA";

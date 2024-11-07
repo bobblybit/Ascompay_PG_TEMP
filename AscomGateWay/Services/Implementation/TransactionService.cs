@@ -707,7 +707,7 @@ namespace AscomPayPG.Services.Implementation
         }
 
         public async Task<AccountLookUpResponse> AccountLookup(accountLookupRequest accountLookupRequest, string userUid)
-        {
+            {
             var response = new AccountLookUpResponse();
             try
             {
