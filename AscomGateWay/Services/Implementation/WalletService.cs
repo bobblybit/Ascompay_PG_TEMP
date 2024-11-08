@@ -183,7 +183,7 @@ namespace AscomPayPG.Services.Implementation
                 response.ResponseCode = StatusCodes.Status500InternalServerError;
             }
             return response;
-        }
+        }//-------> from contrller 1
         public async Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model)
         {
             PlainResponse response = new PlainResponse();

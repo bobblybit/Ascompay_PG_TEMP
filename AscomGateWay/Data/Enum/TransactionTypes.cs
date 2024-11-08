@@ -4,9 +4,14 @@
     {
         AccountTopUp,
         WalletTopUp,
-        TransferToAscomUsers,
         Withdrawal,
         Reversal,
-        TransferToOthersBanks
+        Credit,
+        WalletToAscomPayAccount,
+        AscomPayAccountToWallet,
+        TransferToAscomUsers,
+        TransferToOthersBanks,
+        WalletToWalletOffline,
+        WalletToWalletOnline
     }
 }

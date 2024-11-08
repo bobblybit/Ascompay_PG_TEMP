@@ -9,6 +9,9 @@ using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Gateways;
 using AscomPayPG.Services.Interface;
+using Microsoft.EntityFrameworkCore;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text.Json;
 
 namespace AscomPayPG.Services.Implementation
@@ -38,7 +41,7 @@ namespace AscomPayPG.Services.Implementation
             smartObj = new SmartObj(_context);
             waas = new WAAS(_configuration, context, _clientRequestRepo);
         }
-        public async Task<TransferResponseDTO> TransferFundFromAccountOrWalletToAccount(TransferRequestDTO requestModel)
+/*        public async Task<TransferResponseDTO> TransferFundFromAccountOrWalletToAccount(TransferRequestDTO requestModel)
         {
             var destinationAccount = new Models.DTO.Account();
             var sourceAccount = new Models.DTO.Account();
@@ -387,7 +390,7 @@ namespace AscomPayPG.Services.Implementation
                 var transactionResponse = await _clientRequestRepo.AddTransaction(newTransaction);
                 NotifyForDebit(sender.Email, $"{sender.FirstName} {sender.LastName}",
                    requestModel.Amount.ToString(), senderNewBalance.ToString(),
-                   vat.ToString(), charges.ToString(), DateTime.Now.ToString(), requestModel.Decription);
+                   vat.ToString(), charges.ToString(), DateTime.Now.ToString(), requestModel.Decription, transactionReference);
 
                 if (transactionResponse)
                 {
@@ -419,7 +422,7 @@ namespace AscomPayPG.Services.Implementation
 
 
         }
-
+*/
         private async Task NotifyForCredit(string receiverFullName, string receiverEmail, string sender, string amount, string balance, string transactionTime, string decription)
         {
             string errorMessage = string.Empty;
@@ -467,7 +470,7 @@ namespace AscomPayPG.Services.Implementation
             }
         }
 
-        private void NotifyForDebit(string mailReciever, string receiverFullName, string amount, string balance, string vat, string charges, string transactionTime, string description)
+        private void NotifyForDebit(string mailReciever, string receiverFullName, string amount, string balance, string vat, string charges, string transactionTime, string description, string transactionReference)
         {
             var errorMessage = string.Empty;
             var emailObject = new TransactionAlertNotificationDTO
@@ -478,7 +481,8 @@ namespace AscomPayPG.Services.Implementation
                 Time = transactionTime,
                 Vat = vat,
                 Charges = charges,
-                Description = description
+                Description = description,
+                Reference = transactionReference
             };
             var htmlContent = EmailComposer.ComposeCreditOrDebitNotificationHtmlContent(emailObject, false);
             try
@@ -533,13 +537,13 @@ namespace AscomPayPG.Services.Implementation
             return 0;
         }
 
-        public async Task<decimal> UpdateSourceAccountBalance(Models.DTO.Account account, decimal amount)
+        public async Task<decimal> UpdateSourceAccountBalance(Models.DTO.Account account, decimal amount, bool isFromAccount = false)
         {
             var currentBalance = account.CurrentBalance;
-            account.CurrentBalance -= amount;
             account.PrevioseBalance = currentBalance;
+            account.CurrentBalance -= amount;
             var walletsBalance = await GetUserTotalWalletBalance(account.UserUid.ToString());
-            account.LegerBalance = account.CurrentBalance + walletsBalance;
+            account.LegerBalance -= amount;
             await _clientRequestRepo.UpdateAccount(account);
             return account.CurrentBalance ?? 0;
         }
@@ -549,31 +553,26 @@ namespace AscomPayPG.Services.Implementation
             account.CurrentBalance += amount;
             account.PrevioseBalance = currentBalance;
             var walletsBalance = await GetUserTotalWalletBalance(account.UserUid.ToString());
-            account.LegerBalance = account.CurrentBalance + walletsBalance;
+            account.LegerBalance += amount;
             await _clientRequestRepo.UpdateAccount(account);
             return account.CurrentBalance ?? 0;
         }
-        private async Task<decimal> UpdateSourceWalletBalance(UserWallet wallet, Models.DTO.Account sourceAccount, decimal amount)
+       
+        private async Task<bool> UpdateSourceWalletBalance(UserWallet wallet, decimal amount)
         {
-            var currentBalance = wallet.CurrentBalance;
+            var oldBalance = wallet.CurrentBalance;
             wallet.CurrentBalance -= amount;
-            wallet.PrevioseBalance = currentBalance;
-            await _clientRequestRepo.UpdateWallet(wallet);
-
-            sourceAccount.LegerBalance -= amount;    
-           await _clientRequestRepo.UpdateAccount(sourceAccount);
-
-            return wallet.CurrentBalance ?? 0;
+            wallet.PrevioseBalance = oldBalance;
+            return await _clientRequestRepo.UpdateWallet(wallet);
         }
-
-        private async Task<decimal> UpdateSourceExternaleWalletBalance(UserExternalWallet wallet, decimal amount)
+        private async Task<bool> UpdateDestinationWalletBalance(UserWallet wallet, decimal amount)
         {
-            var old = wallet.availableBalance;
-            var currentBalance = decimal.Parse(old) - amount;
-            wallet.availableBalance = currentBalance.ToString();
-            await _clientRequestRepo.UpdateExternalWallet(wallet);
-            return decimal.Parse(wallet.availableBalance);
+            var oldBalance = wallet.CurrentBalance;
+            wallet.CurrentBalance += amount;
+            wallet.PrevioseBalance = oldBalance;
+            return await _clientRequestRepo.UpdateWallet(wallet);
         }
+
         public async Task<PlainResponse> WebhookReceiver(VirtualAccount_VM payload, string x_squad_signature)
         {
             PlainResponse response = new PlainResponse();
@@ -618,7 +617,6 @@ namespace AscomPayPG.Services.Implementation
 
             return response;
         }
-
         public async Task<PlainResponse> WebhookReceiver9PSB(NinePSBWebhook payload)
         {
             PlainResponse response = new PlainResponse();
@@ -634,6 +632,7 @@ namespace AscomPayPG.Services.Implementation
                     {
                         decimal amount = Convert.ToDecimal(payload.amount);
                         decimal newBalance = await UpdateDestinationAccountBalance(accountEntity, amount);
+                        //await RegisterCreditTransaction(payload.amount, payload.sendername);
                         var json = JsonSerializer.Serialize(payload);
                         response.IsSuccessful = true;
                         webhook.Reference = payload.transactionref;
@@ -787,156 +786,350 @@ namespace AscomPayPG.Services.Implementation
             }
 
             return response;
-        }
-        public async Task<PlainResponse> TransferFundFromAccountOrWalletToAccount9PSB(TransferRequestDTO requestModel)
+        }//-----> controller 2
+        public async Task<PlainResponse> TransferFundInternal(TransferRequestDTO requestModel)
         {
             PlainResponse response = new PlainResponse();
             try
             {
-                var charges = await _transactionHelper.CalculateCharges(requestModel.Amount, TransactionTypes.TransferToAscomUsers.ToString());
+                decimal paymentProviderCharges = 0;
+                if (requestModel.TransactionType.ToLower() == TransactionTypes.TransferToAscomUsers.ToString().ToLower())
+                {
+                    paymentProviderCharges = await _transactionHelper.GetPaymentProviderCharges(requestModel.TransactionType);
+                }
+                var marchantCharge = await _transactionHelper.CalculateCharges(requestModel.Amount, requestModel.TransactionType);
+                var charges = paymentProviderCharges + marchantCharge;
                 var vat = TransactionHelper.CalculateVAT(requestModel.Amount + charges);
-
-                var sourceAccount = new Models.DTO.Account();
-                var recieverAccount = await _clientRequestRepo.GetUserAccount(requestModel.ReceiverAccount);
+                string transactionReference = Guid.NewGuid().ToString().Substring(0, 20).Replace("-", "").ToUpper();
+                var sourceAccount = await _context.Accounts.FirstOrDefaultAsync(x => x.AccountNumber == requestModel.SenderAccountOrWallet);
+                var receiverWallet = await _context.UserWallets.FirstOrDefaultAsync(x => x.WalletUID.ToString() == requestModel.ReceiverAccountOrWallet);
+                var recieverAccount = await _clientRequestRepo.GetAccount(requestModel.ReceiverAccountOrWallet);
                 var sourceWallet = await _clientRequestRepo.GetWalletById(requestModel.SenderAccountOrWallet);
+               
                 var sender = new User();
                 var reciever = new User();
 
-                if (recieverAccount == null)
+                #region ASCOM ACCOUNT TO WALLET
+                if (requestModel.TransactionType == TransactionTypes.AscomPayAccountToWallet.ToString())
                 {
-                    return new PlainResponse
-                    {
-                        IsSuccessful = false,
-                        Message = "Receiver account does exist",
-                        Data = 0,
-                    };
-                }
+                    var senderAccount = await _context.Accounts.FirstOrDefaultAsync(x => x.AccountNumber == requestModel.SenderAccountOrWallet);
 
-                reciever = await _clientRequestRepo.GetUser(recieverAccount.UserUid.ToString());
-
-                decimal senderNewBalance = 0;
-                if (requestModel.IsAccount)
-                {
-                    sourceAccount =  await _clientRequestRepo.GetUserAccount(requestModel.SenderAccountOrWallet);
-                    if (sourceAccount == null)
+                    if (senderAccount == null)
                     {
                         return new PlainResponse
                         {
                             IsSuccessful = false,
-                            Message = "source account account does exist",
+                            Message = "Sender account does exist",
                             Data = 0,
                         };
                     }
-                    sender = await _clientRequestRepo.GetUser(sourceAccount.UserUid.ToString());
+                   
+                    sender = await _clientRequestRepo.GetUser(senderAccount.UserUid.ToString());
+                    if (sender == null)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "sender does not exist",
+                            Data = 0,
+                        };
+                    }
+
+
+                    if (receiverWallet == null)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "Receiver wallet does exist",
+                            Data = 0,
+                        };
+                    }
+
+                    if (sourceAccount.CurrentBalance < requestModel.Amount + charges + vat)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = " Insufficient Balance",
+                            Data = 0,
+                        };
+                    }
+
+                    // registar transaction
+                    var regResponse = await _clientRequestRepo.RegisterTransaction(requestModel.Amount, paymentProviderCharges, marchantCharge, requestModel.ReceiverAccountName,
+                                                                                   sender, transactionReference, requestModel.Amount+vat +charges,requestModel.Decription,
+                                                                                   requestModel.TransactionType, vat, charges, PaymentProvider.AscomPay.ToString(),
+                                                                                   senderAccount.AccountNumber,"","", receiverWallet.WalletUID.ToString());
+
+                    if (!regResponse)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "Something went wrong while performing transaction",
+                            Data = 0,
+                        };
+                    }
+
+                    var fundReponse = await  FundWalletFromAccount(receiverWallet, senderAccount, requestModel.Amount+charges);
+
+                    if (!fundReponse)
+                    {
+                        await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
+
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "Something went wrong while performing transaction",
+                            Data = 0,
+                        };
+                    }
+
+
+                    var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Completed.ToString());
+
+                    return new PlainResponse
+                    {
+                        IsSuccessful = true,
+                        Message = "Transaction Was completed Succesfully",
+                        Data = new { },
+                        transaction_reference= transactionReference,
+                        ResponseCode = 200
+                    };
+
                 }
-                else
+                #endregion
+
+                #region WALLET TO ASCOM ACCOUNT
+                if (requestModel.TransactionType == TransactionTypes.WalletToAscomPayAccount.ToString())
                 {
+
                     if (sourceWallet == null)
                     {
                         return new PlainResponse
                         {
                             IsSuccessful = false,
-                            Message = "source wallet account does exist",
+                            Message = "Sender Wallet does exist",
                             Data = 0,
                         };
                     }
+
+
+                    if (recieverAccount == null)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "Receiver Account does exist",
+                            Data = 0,
+                        };
+                    }
+
                     sender = await _clientRequestRepo.GetUser(sourceWallet.UserUid.ToString());
-                    sourceAccount = await _clientRequestRepo.GetUserAccountByUserUid(sender.UserUid.ToString());
-                }
+                    if (sourceWallet.CurrentBalance < requestModel.Amount + charges)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "Insufficient Balance",
+                            Data = 0,
+                        };
+                    }
 
 
-                /*if (sender == reciever)
+                    // registar transaction
+                    var regResponse = await _clientRequestRepo.RegisterTransaction(requestModel.Amount, paymentProviderCharges, marchantCharge, requestModel.ReceiverAccountName, sender, transactionReference, requestModel.Amount + vat + charges,
+                                                                             requestModel.Decription, requestModel.TransactionType, vat, charges, PaymentProvider.AscomPay.ToString(),
+                                                                             "", recieverAccount.AccountNumber, sourceWallet.WalletUID.ToString(),"");
+
+
+                    var fundReponse = await FundAccountFromWallet(sourceWallet, recieverAccount, requestModel.Amount + charges);
+
+                    if (!fundReponse)
+                    {
+                         await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
+
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "Something went wrong while performing transaction",
+                            Data = 0,
+                        };
+                    }
+
+                    var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Completed.ToString());
+
                     return new PlainResponse
                     {
-                        IsSuccessful = false,
-                        Message = "sender and reciever account cannot be the same",
-                        Data = 0,
-                    };*/
-
-              /*  if (requestModel.IsAccount)
-                {
-                    if (sourceAccount.CurrentBalance < requestModel.Amount + charges + vat)
-                        return new PlainResponse
-                        {
-                            IsSuccessful = false,
-                            Message = "Insufficient Balance",
-                            Data = 0,
-                        };
+                        IsSuccessful = true,
+                        Message = "Transaction Was completed Succesfully",
+                        Data = new { },
+                        transaction_reference = transactionReference,
+                        ResponseCode = 200
+                    };
                 }
-                else
-                {
-                    if (sourceWallet.CurrentBalance < requestModel.Amount + charges + vat)
+                #endregion
+
+                #region ASCOMPAY TO ASCOMPAY ACCOUNT
+                if (requestModel.TransactionType == TransactionTypes.TransferToAscomUsers.ToString())
+                 {
+                    recieverAccount = await _context.Accounts.FirstOrDefaultAsync( x => x.AccountNumber == requestModel.ReceiverAccountOrWallet);
+                    if (recieverAccount == null)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "Receiver account does exist",
+                            Data = 0,
+                        };
+                    }
+
+                    reciever = await _clientRequestRepo.GetUser(recieverAccount.UserUid.ToString());
+                    decimal senderNewBalance = 0;
+                    sourceAccount = await _clientRequestRepo.GetUserAccount(requestModel.SenderAccountOrWallet);
+
+                    if (sourceAccount == null)
+                    {
+                            return new PlainResponse
+                            {
+                                IsSuccessful = false,
+                                Message = "source account account does exist",
+                                Data = 0,
+                            };
+                    }
+                    sender = await _clientRequestRepo.GetUser(sourceAccount.UserUid.ToString());
+
+                    if (sender == reciever && requestModel.TransactionType == TransactionTypes.TransferToAscomUsers.ToString())
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "sender and reciever account cannot be the same",
+                            Data = 0,
+                        };
+
+                    if (sourceAccount.LegerBalance < requestModel.Amount + charges + vat)
                         return new PlainResponse
                         {
                             IsSuccessful = false,
                             Message = "Insufficient Balance",
                             Data = 0,
                         };
-                }*/
 
 
-                var TransferRequest9BSB = new OtherBankTransferDTO
-                {
-                    Amount = requestModel.Amount.ToString(),
-                    bank = "9BSP",
-                    Description = requestModel.Decription,
-                    Narration = requestModel.Decription,
-                    RecieverName = recieverAccount.AccountName,
-                    RecieverNumber = recieverAccount.AccountNumber,
-                    UserId = sourceAccount.UserUid.ToString(),
-                    senderAccountNumber = sourceAccount.AccountNumber,
-                    senderName = sourceAccount.AccountName
-                };
-
-                response  = await waas.TransferOtherBank(TransferRequest9BSB);
-
-                if (response.IsSuccessful)
-                {
-                    await UpdateDestinationAccountBalance(recieverAccount, requestModel.Amount);
-                    if (requestModel.IsAccount)
+                    var TransferRequest9BSB = new OtherBankTransferDTO
                     {
-                        senderNewBalance = await  UpdateSourceAccountBalance(sourceAccount, requestModel.Amount);
-                    }
-                    else
-                    {
-                        senderNewBalance = await UpdateSourceWalletBalance(sourceWallet, sourceAccount, requestModel.Amount);
-                    }
-
-                    var newTransaction = new Transactions()
-                    {
-                        UserId = sender.UserId,
-                        RequestTransactionId = string.IsNullOrEmpty(requestModel.transactionId) ? TransactionTypes.TransferToAscomUsers.ToString() + DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff") : requestModel.transactionId,
-                        UserUID = sender.UserUid,
-                        Status = PaymentStatus.Approved.ToString(),
-                        StatusId = 1,
-                        Timestamp = DateTime.Now,
-                        AccessToken = Guid.NewGuid().ToString(),
-                        Amount = requestModel.Amount,
-                        Email = !string.IsNullOrEmpty(sender.Email) ? sender.Email : string.Empty,
+                        Amount = requestModel.Amount.ToString(),
+                        bank = "9BSP",
                         Description = requestModel.Decription,
-                        TransactionType = TransactionTypes.TransferToAscomUsers.ToString(),
-                        SourceAccount = requestModel.SenderAccountOrWallet,
-                        DestinationAccount = requestModel.IsAccount ? requestModel.ReceiverAccount : null,
-                        DestinationWallet = !requestModel.IsAccount ? requestModel.ReceiverAccount : null,
-                        PaymentAction = PaymentActionType.External9PSB.ToString(),
-                        BankCode = (int)BankCodes.Ascom,
-                        T_Vat = vat,
-                        T_Charge = charges
+                        Narration = requestModel.Decription,
+                        RecieverName = recieverAccount.AccountName,
+                        RecieverNumber = recieverAccount.AccountNumber,
+                        UserId = sourceAccount.UserUid.ToString(),
+                        senderAccountNumber = sourceAccount.AccountNumber,
+                        senderName = sourceAccount.AccountName
                     };
 
-                    var transactionResponse = await _clientRequestRepo.AddTransaction(newTransaction);
-                   
-                    NotifyForDebit(sender.Email, $"{sender.FirstName} {sender.LastName}",
-                   requestModel.Amount.ToString(), senderNewBalance.ToString(),
-                   vat.ToString(), charges.ToString(), DateTime.Now.ToString(), requestModel.Decription);
+                    response = await waas.TransferOtherBank(TransferRequest9BSB, true);
 
-                    await NotifyForCredit($"{reciever.FirstName} {reciever.LastName}", reciever.Email,
-                     $"{sender.FirstName} {sender.LastName}",
-                     requestModel.Amount.ToString(),
-                     recieverAccount.CurrentBalance.ToString(),
-                     DateTime.Now.ToString(), requestModel.Decription);
+                    if (response.IsSuccessful)
+                    {
+
+                        senderNewBalance = await UpdateSourceAccountBalance(sourceAccount, requestModel.Amount+charges, true);
+
+                        NotifyForDebit(sender.Email, $"{sender.FirstName} {sender.LastName}",
+                       requestModel.Amount.ToString(), senderNewBalance.ToString(),
+                       vat.ToString(), charges.ToString(), DateTime.Now.ToString(), requestModel.Decription, transactionReference);
+
+                        await NotifyForCredit($"{reciever.FirstName} {reciever.LastName}", reciever.Email,
+                         $"{sender.FirstName} {sender.LastName}",
+                         requestModel.Amount.ToString(),
+                         recieverAccount.CurrentBalance.ToString(),
+                         DateTime.Now.ToString(), requestModel.Decription);
+                    }
                 }
+                #endregion
 
+                #region WALLET TO WALLET
+                if (requestModel.TransactionType == TransactionTypes.WalletToWalletOnline.ToString())
+                {
+
+                    if (sourceWallet == null)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "Sender Wallet does exist",
+                            Data = 0,
+                        };
+                    }
+
+
+                    if (receiverWallet == null)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "Receiver wallet does exist",
+                            Data = 0,
+                        };
+                    }
+
+                    if (sourceWallet.CurrentBalance < requestModel.Amount + charges)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "Insuffient balance",
+                            Data = 0,
+                        };
+                    }
+                    sender = await _clientRequestRepo.GetUser(sourceWallet?.UserUid.ToString());
+                    // registar transaction
+                    var regResponse = await _clientRequestRepo.RegisterTransaction(requestModel.Amount, paymentProviderCharges, marchantCharge, requestModel.ReceiverAccountName, 
+                                                                                   sender, transactionReference, requestModel.Amount + vat + charges,
+                                                                                   requestModel.Decription, requestModel.TransactionType, vat, charges, 
+                                                                                   PaymentProvider.AscomPay.ToString(),"", "", sourceWallet.WalletUID.ToString(),
+                                                                                   receiverWallet.WalletUID.ToString());
+
+                    // registar transaction
+                    var debitResponse = await UpdateSourceWalletBalance(sourceWallet, requestModel.Amount + charges);
+                    if (!debitResponse)
+                    {
+                        await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "something went wrong while performing trasaction",
+                            Data = 0,
+                        };
+                    }
+                    
+                    var creditResponse = await UpdateDestinationWalletBalance(receiverWallet, requestModel.Amount + charges);
+                    if (!creditResponse)
+                    {
+                        await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "something went wrong while performing trasaction",
+                            Data = 0,
+                        };
+                    }
+
+                    var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Completed.ToString());
+
+
+                    return new PlainResponse
+                    {
+                        IsSuccessful = true,
+                        Message = "Transaction Was completed Succesfully",
+                        Data = new { },
+                        transaction_reference = transactionReference,
+                        ResponseCode = 200
+                    };
+                }
+                #endregion
             }
             catch (Exception ex)
             {
@@ -947,6 +1140,45 @@ namespace AscomPayPG.Services.Implementation
             }
             return response;
         }
+
+       public async Task<bool> FundWalletFromAccount(UserWallet receiverWallet, Models.DTO.Account sourceAccount, decimal amount)
+        {
+            if (sourceAccount.CurrentBalance < amount)
+                return false;
+            // fund wallet 
+            await UpdateDestinationWalletBalance(receiverWallet, amount);
+            // return response
+
+            sourceAccount.CurrentBalance -= amount;
+            _context.Accounts.Update(sourceAccount);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+       public async Task<bool> FundAccountFromWallet(UserWallet sourceWallet, Models.DTO.Account receiveAccount, decimal amount)
+        {
+          
+            await UpdateSourceWalletBalance(sourceWallet, amount);
+
+            var oldBalance = receiveAccount.CurrentBalance;
+            receiveAccount.CurrentBalance += amount;
+            receiveAccount.PrevioseBalance = oldBalance;
+            _context.Accounts.Update(receiveAccount);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+        //public async void RegisterCreditTransaction(decimal amount, string receiverAccountName, string receiverAccount, Models.DTO.Account senderAccount,  string description)
+        //{
+        //    // registar transaction
+        //    var sender = await _clientRequestRepo.GetUser(senderAccount.UserUid.ToString());
+        //    var transactionReference = Guid.NewGuid().ToString().Substring(0, 20).Replace("-", "").ToUpper();
+        //    var regResponse = await _clientRequestRepo.RegisterTransaction(amount, 0, 0, receiverAccountName,
+        //                                                                   sender, transactionReference, amount + 0 + 0, description,
+        //                                                                   TransactionTypes.Credit.ToString(), 0, 0, PaymentProvider.NinePSB.ToString(),
+        //                                                                   senderAccount.AccountNumber, receiverAccount, "", "",true);
+        //}
     }
 }
 

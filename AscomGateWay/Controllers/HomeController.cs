@@ -225,7 +225,7 @@ namespace AscomPayPG.Controllers
        // [ValidateCustomToken]
         public async Task<IActionResult> TransferFund([FromBody] TransferRequestDTO mdoel)
         {
-            var reponse = await _transactionService.TransferFundFromAccountOrWalletToAccount9PSB(mdoel);
+            var reponse = await _transactionService.TransferFundInternal(mdoel);
             return Json(reponse);
         }
     }

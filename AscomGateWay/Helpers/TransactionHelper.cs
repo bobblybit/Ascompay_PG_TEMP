@@ -1,6 +1,8 @@
 ﻿using AscomPayPG.Data;
+using AscomPayPG.Data.Enum;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Services.Interface;
+using Microsoft.EntityFrameworkCore;
 
 namespace AscomPayPG.Helpers
 {
@@ -32,5 +34,12 @@ namespace AscomPayPG.Helpers
             }
             return 0;
         }
+
+        public async Task<decimal> GetPaymentProviderCharges(string transactionType)
+        {
+            var charges = await _appContext.TransactionType.FirstOrDefaultAsync(x => x.Ttype.Replace(" ", "").Replace("(", "").Replace(")", "") == transactionType);
+            return charges == null ? 0 : charges.T_Provider_Charges;
+        } 
+
     }
 }

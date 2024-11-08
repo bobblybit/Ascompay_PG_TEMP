@@ -17,5 +17,6 @@ namespace AscomPayPG.Models.DTO
         public int? T_Action { get; set; }
         public string? T_Status { get; set; }
         public int? T_Channel { get; set; }
+        public decimal T_Provider_Charges { get; set; }
     }
 }

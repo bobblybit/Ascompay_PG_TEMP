@@ -6,7 +6,10 @@ namespace AscomPayPG.Models.Shared
         Init = 1,
         Pending,
         Declined,
-        Approved
+        Approved,
+        Completed,
+        Failed,
+        Successful
     }
 
     public enum ClientRequestEnum

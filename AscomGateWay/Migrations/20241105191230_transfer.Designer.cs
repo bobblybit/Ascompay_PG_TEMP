@@ -4,6 +4,7 @@ using AscomPayPG.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AscomPayPG.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241105191230_transfer")]
+    partial class transfer
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -216,9 +218,6 @@ namespace AscomPayPG.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("T_Percentage")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("T_Provider_Charges")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("T_Status")
@@ -593,10 +592,6 @@ namespace AscomPayPG.Migrations
                     b.Property<string>("CallbackURL")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
@@ -609,9 +604,6 @@ namespace AscomPayPG.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("NetAmount")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("PaymentAction")
                         .HasColumnType("nvarchar(max)");
 
@@ -622,12 +614,14 @@ namespace AscomPayPG.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RecieverName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RequestTransactionId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SenderName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SourceAccount")
@@ -643,12 +637,6 @@ namespace AscomPayPG.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("T_Charge")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("T_Marchant_Charges")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("T_Provider_Charges")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("T_Vat")

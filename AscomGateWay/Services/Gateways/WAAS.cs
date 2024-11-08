@@ -5,8 +5,10 @@ using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
+using AscomPayPG.Services.Interface;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using System;
 using System.Dynamic;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -861,17 +863,22 @@ namespace AscomPayPG.Services.Gateways
             }
             return respObj;
         }
-        public async Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model)
+        // service 1------>
+        public async Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model, bool isInternal = false)
         {
+            string transactionType = isInternal ? TransactionTypes.TransferToAscomUsers.ToString() : TransactionTypes.TransferToOthersBanks.ToString();
+            
+
+
             PlainResponse respObj = new PlainResponse();
             PlainResponse respAccessToken = new PlainResponse();
             string bvn = string.Empty;
-
             var sourceAccount = await _context.Accounts.FirstOrDefaultAsync(x => x.AccountNumber == model.senderAccountNumber);
             var sender = _context.Users.FirstOrDefault(x => x.UserUid.ToString() == model.UserId);
-            var charges = await CalculateCharges(decimal.Parse(model.Amount), TransactionTypes.TransferToOthersBanks.ToString());
+            var paymentProviderCharges = await GetPaymentProviderCharges(transactionType);
+            var marchantCharge = await CalculateCharges(decimal.Parse(model.Amount), transactionType);
+            var charges = paymentProviderCharges + marchantCharge;
             var vat = TransactionHelper.CalculateVAT(decimal.Parse(model.Amount) + charges);
-
 
             if (sender == null)
             {
@@ -893,7 +900,7 @@ namespace AscomPayPG.Services.Gateways
                 };
             }
 
-          /*  if ((decimal)sourceAccount.CurrentBalance < decimal.Parse(model.Amount) + vat + charges)
+            if ((decimal)sourceAccount.CurrentBalance < decimal.Parse(model.Amount) + charges + vat)
             {
                 return new PlainResponse
                 {
@@ -901,7 +908,24 @@ namespace AscomPayPG.Services.Gateways
                     Message = "insufficient balance",
                     Data = 0,
                 };
-            }*/
+            }
+
+                var transactionReference =  Guid.NewGuid().ToString().Substring(0, 20).Replace("-", "").ToUpper();
+                 // registar transaction
+                 var regResponse = await _clientRequestRepo.RegisterTransaction(decimal.Parse(model.Amount), paymentProviderCharges, marchantCharge,
+                                                                                model.RecieverName, sender, transactionReference, decimal.Parse(model.Amount) + charges,
+                                                                                model.Description, transactionType, vat, charges, PaymentProvider.NinePSB.ToString(),
+                                                                                model.senderAccountNumber, model.RecieverNumber, "", "");
+                if (!regResponse)
+                {
+                    return new PlainResponse
+                    {
+                        IsSuccessful = false,
+                        Message = "Something went wrong while processing request",
+                        Data = 0,
+                    };
+                }
+           
 
             try
             {
@@ -915,7 +939,7 @@ namespace AscomPayPG.Services.Gateways
 
                 payload.customer.account = new Models.WAAS.Account
                 {
-                    bank = "120001",
+                    bank = isInternal ? "120001"  : model.bank,
                     senderaccountnumber = model.senderAccountNumber,
                     number = model.RecieverNumber,
                     name = model.RecieverName,
@@ -923,13 +947,14 @@ namespace AscomPayPG.Services.Gateways
                 };
                 payload.order.country = "NGN";
                 payload.order.currency = "Nigeria";
-                payload.transaction.sessionId = "";/*= Guid.NewGuid().ToString().Substring(0,16).Replace("-", "").ToUpper()*/
-                payload.transaction.reference = Guid.NewGuid().ToString().Substring(0, 16).Replace("-", "").ToUpper();
-                payload.merchant.merchantFeeAmount = model.Amount;
+                payload.transaction.sessionId = "";
+                payload.transaction.reference = transactionReference;
+                payload.merchant.merchantFeeAmount = marchantCharge.ToString(); // getMarchant
                 payload.merchant.merchantFeeAccount = "";
                 payload.narration = model.Narration;
                 payload.order.description = model.Description;
-                payload.order.amount = model.Amount;
+                decimal amountToSend = decimal.Parse(model.Amount) + charges;
+                payload.order.amount = amountToSend.ToString();
                 payload.message = "";
                 payload.code = "";
 
@@ -977,33 +1002,10 @@ namespace AscomPayPG.Services.Gateways
                             {
                                 respObj.IsSuccessful = true;
                                 respObj.Data = responseObj.data;
+                                respObj.transaction_reference = payload.transaction.reference;
 
-                                var newBalance = await UpdateSourceAccountBalance(sourceAccount, decimal.Parse(model.Amount));
-
-                                var newTransaction = new Transactions()
-                                {
-                                    UserId = sender.UserId,
-                                    RequestTransactionId = payload.transaction.reference,
-                                    UserUID = sender.UserUid,
-                                    Status = PaymentStatus.Approved.ToString(),
-                                    StatusId = 1,
-                                    Timestamp = DateTime.Now,
-                                    AccessToken = Guid.NewGuid().ToString(),
-                                    Amount = decimal.Parse(model.Amount),
-                                    Email = !string.IsNullOrEmpty(sender.Email) ? sender.Email : string.Empty,
-                                    Description = model.Description,
-                                    TransactionType = TransactionTypes.TransferToOthersBanks.ToString(),
-                                    SourceAccount = model.senderAccountNumber,
-                                    DestinationAccount = model.RecieverNumber,
-                                    PaymentAction = PaymentActionType.External9PSB.ToString(),
-                                    BankCode = (int)BankCodes.Ascom,
-                                    T_Vat = vat,
-                                    T_Charge = charges
-                                };
-
-                                var transactionResponse = _context.Transactions.Add(newTransaction);
-                                await _context.SaveChangesAsync();
-
+                               var newBalance = await UpdateSourceAccountBalanceForExternalTransfer(sourceAccount, amountToSend);
+                               var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Successful.ToString());
                             }
                             else
                             {
@@ -1012,14 +1014,16 @@ namespace AscomPayPG.Services.Gateways
                             }
 
                             respObj.ResponseCode = (int)response.StatusCode;
-                            respObj.Message = responseObj.message;
+                            respObj.Message = responseObj.data.message;
                         }
                         else
                         {
+                            var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
+
                             respObj.IsSuccessful = false;
                             string apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                            respObj.Message = responseObj.message;
+                            respObj.Message = responseObj.data.message;
                             respObj.Data = null;
                             respObj.ResponseCode = (int)response.StatusCode;
                         }
@@ -1036,7 +1040,7 @@ namespace AscomPayPG.Services.Gateways
             return respObj;
         }
 
-        public async Task<decimal> UpdateSourceAccountBalance(Models.DTO.Account account, decimal amount)
+        public async Task<decimal> UpdateSourceAccountBalanceForExternalTransfer(Models.DTO.Account account, decimal amount)
         {
             var currentBalance = account.CurrentBalance;
             account.CurrentBalance -= amount;
@@ -1068,6 +1072,11 @@ namespace AscomPayPG.Services.Gateways
             }
             return 0;
         }
+        public async Task<decimal> GetPaymentProviderCharges(string transactionType)
+        {
+            var charges = await _context.TransactionType.FirstOrDefaultAsync(x => x.Ttype.Replace(" ", "").Replace("(", "").Replace(")", "") == transactionType);
+            return charges == null ? 0 : charges.T_Provider_Charges;
+        }
         public async Task<decimal> CalculateCharges(decimal amount, string transactionType)
         {
             var transactionTypeDetails = _context.TransactionType.FirstOrDefault(x => x.Ttype
@@ -1076,7 +1085,6 @@ namespace AscomPayPG.Services.Gateways
                                                                                       .Replace(")", "") == transactionType);
             if (transactionTypeDetails != null)
             {
-
                 if (transactionTypeDetails.By_Percent)
                     return Math.Round(transactionTypeDetails.T_Percentage / 100 * amount, 1);
                 else
@@ -1084,6 +1092,7 @@ namespace AscomPayPG.Services.Gateways
             }
             return 0;
         }
+
 
         public async Task<AccountLookUpResponse> AccountLookup9PSB(accountLookupRequest accountLookupRequest, string userId)
         {

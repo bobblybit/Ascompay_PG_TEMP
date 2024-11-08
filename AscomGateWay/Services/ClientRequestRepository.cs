@@ -1,6 +1,8 @@
 using AscomPayPG.Data;
+using AscomPayPG.Data.Enum;
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
+using AscomPayPG.Models.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace AscomPayPG.Services
@@ -98,6 +100,10 @@ namespace AscomPayPG.Services
 
         public async Task<Account> GetUserAccount(string destination)
                  => await _context.Accounts.FirstOrDefaultAsync(x => x.AccountNumber == destination || x.AccountId == Convert.ToInt64(destination));
+
+        public async Task<Account> GetAccount(string destination)
+                => await _context.Accounts.FirstOrDefaultAsync(x => x.AccountNumber == destination);
+
         public async Task<Account> GetUserAccountByUserUid(string userUid)
                 => await _context.Accounts.FirstOrDefaultAsync(x => x.UserUid == Guid.Parse(userUid));
 
@@ -132,6 +138,91 @@ namespace AscomPayPG.Services
         {
             _context.Transactions.Update(model);
             return _context.SaveChanges() > 0;
+        }
+
+        public async Task<bool> RegisterTransaction(
+                                                  decimal netAmount,
+                                                  decimal providerCharges,
+                                                  decimal marchantCharges,
+                                                  string recieverName,
+                                                  User sender,
+                                                  string transactionReference,
+                                                  decimal amount,
+                                                  string decription,
+                                                  string trasactionType,
+                                                  decimal vat,
+                                                  decimal charges,
+                                                  string provider,
+                                                  string senderAccount = "",
+                                                  string recieverAccount = "",
+                                                  string senderWallet = "",
+                                                  string recieverWallet = "",
+                                                  bool setAsCompleted = false
+                                                  )
+        {
+            var newTransaction = new Transactions()
+            {
+                UserId = sender != null ? sender.UserId : null,
+                RequestTransactionId = transactionReference,
+                UserUID = sender != null ? sender.UserUid : null,
+                Status = setAsCompleted ?   PaymentStatus.Completed.ToString() : PaymentStatus.Pending.ToString(),
+                StatusId = 1,
+                Timestamp = DateTime.Now,
+                AccessToken = Guid.NewGuid().ToString(),
+                Amount = amount,
+                Email = sender != null ? sender.Email : "",
+                Description = decription,
+                SourceAccount = senderAccount,
+                DestinationAccount = recieverAccount,
+                SourceWallet = senderWallet,
+                DestinationWallet = recieverWallet,
+                TransactionType = trasactionType,
+                PaymentAction = provider,
+                PaymentProvider = provider,
+                BankCode = (int)BankCodes.Ascom,
+                Currency = "NGN",
+                T_Vat = vat,
+                T_Charge = charges,
+                SenderName = sender != null ? $"{sender.FirstName} {sender.MiddleName} {sender.LastName}" : string.Empty,
+                RecieverName =  recieverName,
+                NetAmount= netAmount,
+                T_Marchant_Charges= marchantCharges,
+                T_Provider_Charges= providerCharges,
+            };
+
+            try
+            {
+                 await _context.Transactions.AddAsync(newTransaction);
+                return await _context.SaveChangesAsync() > 0;
+
+            }
+            catch (Exception EX)
+            {
+
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateTransactionStatusByReference(string referecneId, string newStatus)
+        {
+            try
+            {
+                var transaction = await _context.Transactions.FirstOrDefaultAsync(trans => trans.RequestTransactionId == referecneId);
+                if (transaction == null)
+                    return false;
+                transaction.Status = newStatus;
+                transaction.UpdatedAt = DateTime.Now;
+                 _context.Transactions.Update(transaction);
+                if (await _context.SaveChangesAsync() > 0)
+                    return true;
+                return false;
+
+            }
+            catch (Exception EX)
+            {
+
+                throw;
+            }
         }
     }
 }

@@ -5,6 +5,7 @@
         Init = 1,
         Pending,
         Failed,
-        Success
+        Success,
+        Completed
     }
 }
