@@ -71,7 +71,7 @@ namespace AscomPayPG.Controllers
         public async Task<IActionResult> WebHookValidation([FromBody] NinePSBWebhook model)
         {
             var response = await _transactionService.WebhookReceiver9PSB(model);
-            if (response.IsSuccessful == true)
+            if (response.success == true)
             {
                 return Ok(response);
             }

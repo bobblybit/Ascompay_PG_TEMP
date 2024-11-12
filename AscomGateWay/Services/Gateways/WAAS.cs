@@ -104,6 +104,7 @@ namespace AscomPayPG.Services.Gateways
             PlainResponse respAccessToken = new PlainResponse();
             PlainResponse respWalletEnquiry = new PlainResponse();
             string bvn = string.Empty;
+            BlueSaltBvnVerificationResponseDTO bvnVerificationResponse = new BlueSaltBvnVerificationResponseDTO();
             try
             {
                 respAccessToken = await GetAccessToken();
@@ -111,12 +112,14 @@ namespace AscomPayPG.Services.Gateways
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 var appUser = await _context.Users.FirstOrDefaultAsync(x => x.UserUid == Guid.Parse(userUid));
+
                 if (appUser != null)
                 {
                     var UserExternalWalletEntity = await _context.UserExternalWallets.FirstOrDefaultAsync(x => x.UserUId == appUser.UserUid.ToString());
+                    var UserExternalWalletEntityN = await _context.UserExternalWallets.FirstOrDefaultAsync(x => x.UserUId == appUserN.UserUid.ToString());
                     if (UserExternalWalletEntity == null)
                     {
-                        var KycEntity = await _context.UserKycs.FirstOrDefaultAsync(x => x.UserUid == appUser.UserUid && x.DocumentType.ToLower() == "bvn" && x.DocumentNumber != null);
+                        var KycEntity = await _context.UserKycs.FirstOrDefaultAsync(x => x.UserUid == Guid.Parse(userUid) && x.BlueSaltBVNVerificationResponse != null && x.DocumentType.ToLower() == "bvn" && x.DocumentNumber != null);
                         if (KycEntity != null)
                         {
                             bvn = KycEntity.DocumentNumber;
@@ -130,21 +133,43 @@ namespace AscomPayPG.Services.Gateways
                         }
                         if (!string.IsNullOrEmpty(bvn))
                         {
+                            bvnVerificationResponse = JsonConvert.DeserializeObject<BlueSaltBvnVerificationResponseDTO>(KycEntity.BlueSaltBVNVerificationResponse);
 
-                            requestData.accountName = $"{appUser.FirstName} {appUser.LastName}";
-                            requestData.bvn = bvn;
-                            requestData.dateOfBirth = appUser.DateOfBirth != null ? appUser.DateOfBirth.Value.ToString("dd/MM/yyyy").Replace("-", "/") : DateTime.Now.AddYears(-20).ToString("dd/MM/yyyy").Replace("-", "/"); // "01/01/2000";
-                            requestData.gender = "1";
-                            requestData.lastName = appUser.LastName;
-                            requestData.otherNames = appUser.MiddleName == null ? "N/A" : appUser.MiddleName;
-                            requestData.phoneNo = appUser.PhoneNumber;
-                            requestData.transactionTrackingRef = userUid.Split("-").Last();  //DateTime.Now.Ticks.ToString(); //userUid.Split("-").Last();
-                            requestData.placeOfBirth = "NA";
-                            requestData.address = appUser.Address == null ? "NA" : appUser.Address;
-                            requestData.nationalIdentityNo = "";
-                            requestData.nextOfKinPhoneNo = "";
-                            requestData.nextOfKinName = "";
-                            requestData.email = appUser.Email;
+                            if(bvnVerificationResponse == null)
+                            {
+                                requestData.accountName = $"{appUser.FirstName} {appUser.LastName}";
+                                requestData.bvn = bvn;
+                                requestData.dateOfBirth = Convert.ToDateTime(bvnVerificationResponse.results.personal_info.date_of_birth).ToString("dd/MM/yyyy").Replace("-", "/");
+                                requestData.gender = "1";
+                                requestData.lastName = appUser.LastName;
+                                requestData.otherNames = appUser.MiddleName == null ? "N/A" : appUser.MiddleName;
+                                requestData.phoneNo = appUser.PhoneNumber;
+                                requestData.transactionTrackingRef = userUid.Split("-").Last();  //DateTime.Now.Ticks.ToString(); //userUid.Split("-").Last();
+                                requestData.placeOfBirth = "NA";
+                                requestData.address = appUser.Address == null ? "NA" : appUser.Address;
+                                requestData.nationalIdentityNo = "";
+                                requestData.nextOfKinPhoneNo = "";
+                                requestData.nextOfKinName = "";
+                                requestData.email = appUser.Email;
+                            }
+                            else
+                            {
+                                requestData.accountName = $"{bvnVerificationResponse.results.personal_info.first_name} {bvnVerificationResponse.results.personal_info.last_name}";
+                                requestData.bvn = bvn;
+                                requestData.dateOfBirth = appUser.DateOfBirth != null ? appUser.DateOfBirth.Value.ToString("dd/MM/yyyy").Replace("-", "/") : DateTime.Now.AddYears(-20).ToString("dd/MM/yyyy").Replace("-", "/"); // "01/01/2000";
+                                requestData.gender = bvnVerificationResponse.results.personal_info.gender.ToLower().StartsWith("m") ? "0" :"1";
+                                requestData.lastName = bvnVerificationResponse.results.personal_info.last_name;
+                                requestData.otherNames = bvnVerificationResponse.results.personal_info.middle_name == null ? "N/A" : bvnVerificationResponse.results.personal_info.middle_name;
+                                requestData.phoneNo = bvnVerificationResponse.results.personal_info.phone_number;
+                                requestData.transactionTrackingRef = userUid.Split("-").Last();  //DateTime.Now.Ticks.ToString(); //userUid.Split("-").Last();
+                                requestData.placeOfBirth = "NA";
+                                requestData.address = appUser.Address == null ? "NA" : appUser.Address;
+                                requestData.nationalIdentityNo = "";
+                                requestData.nextOfKinPhoneNo = "";
+                                requestData.nextOfKinName = "";
+                                requestData.email = appUser.Email;
+                            }
+                            
                         }
                         string fullUrl = string.Empty;
                         dynamic responseObj = new ExpandoObject();
@@ -196,8 +221,8 @@ namespace AscomPayPG.Services.Gateways
                                                 userExternalWallet.availableBalance = string.Empty;
                                                 userExternalWallet.bvn = respWalletEnquiry.Data.bvn;
                                                 userExternalWallet.email = appUser.Email;
-                                                userExternalWallet.firstName = appUser.FirstName;
-                                                userExternalWallet.lastName = appUser.LastName;
+                                                userExternalWallet.firstName = bvnVerificationResponse == null ?  appUser.FirstName : bvnVerificationResponse.results.personal_info.first_name;
+                                                userExternalWallet.lastName = bvnVerificationResponse == null ? appUser.LastName : bvnVerificationResponse.results.personal_info.last_name;
                                                 userExternalWallet.phoneNo = appUser.PhoneNumber;
                                                 userExternalWallet.freezeStatus = respWalletEnquiry.Data.freezeStatus;
                                                 userExternalWallet.ledgerBalance = string.Empty;

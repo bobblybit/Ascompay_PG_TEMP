@@ -50,7 +50,7 @@ namespace AscomPayPG.Data
         //public DbSet<WalletType> WalletTypes { get; set; }
         //public DbSet<UserPasswordHistory> UserPasswordHistories { get; set; }
         public DbSet<ExternalIntegrationLog> ExternalIntegrationLogs { get; set; }
-
+        public DbSet<BlueSaltBVNVerificationLog> BlueSaltBVNVerificationLogs { get; set; }
         public DbSet<UserDeviceInformation> UserDeviceInformation { get; set; }
         public DbSet<UserDeviceAuthentication> UserDeviceAuthentication { get; set; }
 

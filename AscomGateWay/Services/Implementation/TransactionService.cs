@@ -617,9 +617,9 @@ namespace AscomPayPG.Services.Implementation
 
             return response;
         }
-        public async Task<PlainResponse> WebhookReceiver9PSB(NinePSBWebhook payload)
+        public async Task<NinePSBWebhookResponse> WebhookReceiver9PSB(NinePSBWebhook payload)
         {
-            PlainResponse response = new PlainResponse();
+            NinePSBWebhookResponse response = new NinePSBWebhookResponse();
             Webhook webhook = new Webhook();
             try
             {
@@ -628,13 +628,16 @@ namespace AscomPayPG.Services.Implementation
                 var hookEntity = _context.Webhook.FirstOrDefault(x => x.Reference == payload.transactionref);
                 if(hookEntity == null)
                 {
+                    response.message = payload.message.ToLower();
+                    response.success = true;
+                    response.status = payload.message;
+                    response.transactionref = payload.transactionref;
                     if (accountEntity != null)
                     {
                         decimal amount = Convert.ToDecimal(payload.amount);
                         decimal newBalance = await UpdateDestinationAccountBalance(accountEntity, amount);
                         //await RegisterCreditTransaction(payload.amount, payload.sendername);
                         var json = JsonSerializer.Serialize(payload);
-                        response.IsSuccessful = true;
                         webhook.Reference = payload.transactionref;
                         webhook.EventType = "collection.successful";
                         webhook.Vendor = "9PSB";
@@ -642,37 +645,36 @@ namespace AscomPayPG.Services.Implementation
                         webhook.RequestString = json.ToString();
                         _context.Add(webhook);
                         await _context.SaveChangesAsync();
-                        response.Message = $"web hook saved successfully.";
-                        response.ResponseCode = StatusCodes.Status200OK;
+                        
                     }
                     else
                     {
                         decimal amount = Convert.ToDecimal(payload.amount);
 
                         var json = JsonSerializer.Serialize(payload);
-                        response.IsSuccessful = true;
                         webhook.Reference = payload.transactionref;
                         webhook.EventType = "collection.successful";
                         webhook.RequestString = json.ToString();
                         _context.Add(webhook);
                         await _context.SaveChangesAsync();
-                        response.Message = $"web hook saved successfully.";
-                        response.ResponseCode = StatusCodes.Status200OK;
+                      
                     }
                 }
                 else
                 {
-                    response.IsSuccessful = false;
-                    response.Message = "Webhook notification already received";
-                    response.ResponseCode = StatusCodes.Status409Conflict;
+                    response.message = payload.message;
+                    response.success = true;
+                    response.status = payload.message.ToLower();
+                    response.transactionref = payload.transactionref;
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"An error occurred: {ex.Message}");
-                response.IsSuccessful = false;
-                response.Message = ex.Message;
-                response.ResponseCode = StatusCodes.Status500InternalServerError;
+                response.message = ex.Message;
+                response.success = false;
+                response.status = payload.message.ToLower();
+                response.transactionref = payload.transactionref;
             }
 
 
