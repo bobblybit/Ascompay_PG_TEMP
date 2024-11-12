@@ -1010,7 +1010,7 @@ namespace AscomPayPG.Services.Implementation
                             Data = 0,
                         };
 
-                    if (sourceAccount.LegerBalance < requestModel.Amount + charges + vat)
+                    if (sourceAccount.CurrentBalance < (requestModel.Amount + charges + vat))
                         return new PlainResponse
                         {
                             IsSuccessful = false,
@@ -1037,7 +1037,7 @@ namespace AscomPayPG.Services.Implementation
                     if (response.IsSuccessful)
                     {
 
-                        senderNewBalance = await UpdateSourceAccountBalance(sourceAccount, requestModel.Amount+charges, true);
+                       // senderNewBalance = await UpdateSourceAccountBalance(sourceAccount, requestModel.Amount+charges, true);
 
                         NotifyForDebit(sender.Email, $"{sender.FirstName} {sender.LastName}",
                        requestModel.Amount.ToString(), senderNewBalance.ToString(),

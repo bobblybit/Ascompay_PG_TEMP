@@ -183,7 +183,8 @@ namespace AscomPayPG.Services
                 Currency = "NGN",
                 T_Vat = vat,
                 T_Charge = charges,
-                SenderName = sender != null ? $"{sender.FirstName} {sender.MiddleName} {sender.LastName}" : string.Empty,
+                SenderName = sender != null ? $"{sender.FirstName} " +
+                $"{sender.MiddleName} {sender.LastName}" : string.Empty,
                 RecieverName =  recieverName,
                 NetAmount= netAmount,
                 T_Marchant_Charges= marchantCharges,
