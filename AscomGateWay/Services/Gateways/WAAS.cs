@@ -116,7 +116,6 @@ namespace AscomPayPG.Services.Gateways
                 if (appUser != null)
                 {
                     var UserExternalWalletEntity = await _context.UserExternalWallets.FirstOrDefaultAsync(x => x.UserUId == appUser.UserUid.ToString());
-                    var UserExternalWalletEntityN = await _context.UserExternalWallets.FirstOrDefaultAsync(x => x.UserUId == appUserN.UserUid.ToString());
                     if (UserExternalWalletEntity == null)
                     {
                         var KycEntity = await _context.UserKycs.FirstOrDefaultAsync(x => x.UserUid == Guid.Parse(userUid) && x.BlueSaltBVNVerificationResponse != null && x.DocumentType.ToLower() == "bvn" && x.DocumentNumber != null);
@@ -139,10 +138,10 @@ namespace AscomPayPG.Services.Gateways
                             {
                                 requestData.accountName = $"{appUser.FirstName} {appUser.LastName}";
                                 requestData.bvn = bvn;
-                                requestData.dateOfBirth = Convert.ToDateTime(bvnVerificationResponse.results.personal_info.date_of_birth).ToString("dd/MM/yyyy").Replace("-", "/");
+                                requestData.dateOfBirth = appUser.DateOfBirth != null ? appUser.DateOfBirth.Value.ToString("dd/MM/yyyy").Replace("-", "/") : DateTime.Now.AddYears(-20).ToString("dd/MM/yyyy").Replace("-", "/");
                                 requestData.gender = "1";
                                 requestData.lastName = appUser.LastName;
-                                requestData.otherNames = appUser.MiddleName == null ? "N/A" : appUser.MiddleName;
+                                requestData.otherNames = string.IsNullOrEmpty(appUser.MiddleName) ? "N/A" : appUser.MiddleName;
                                 requestData.phoneNo = appUser.PhoneNumber;
                                 requestData.transactionTrackingRef = userUid.Split("-").Last();  //DateTime.Now.Ticks.ToString(); //userUid.Split("-").Last();
                                 requestData.placeOfBirth = "NA";
@@ -156,10 +155,10 @@ namespace AscomPayPG.Services.Gateways
                             {
                                 requestData.accountName = $"{bvnVerificationResponse.results.personal_info.first_name} {bvnVerificationResponse.results.personal_info.last_name}";
                                 requestData.bvn = bvn;
-                                requestData.dateOfBirth = appUser.DateOfBirth != null ? appUser.DateOfBirth.Value.ToString("dd/MM/yyyy").Replace("-", "/") : DateTime.Now.AddYears(-20).ToString("dd/MM/yyyy").Replace("-", "/"); // "01/01/2000";
+                                requestData.dateOfBirth = Convert.ToDateTime(bvnVerificationResponse.results.personal_info.date_of_birth).ToString("dd/MM/yyyy").Replace("-", "/"); // "01/01/2000";
                                 requestData.gender = bvnVerificationResponse.results.personal_info.gender.ToLower().StartsWith("m") ? "0" :"1";
                                 requestData.lastName = bvnVerificationResponse.results.personal_info.last_name;
-                                requestData.otherNames = bvnVerificationResponse.results.personal_info.middle_name == null ? "N/A" : bvnVerificationResponse.results.personal_info.middle_name;
+                                requestData.otherNames = string.IsNullOrEmpty(bvnVerificationResponse.results.personal_info.middle_name) ? "N/A" : bvnVerificationResponse.results.personal_info.middle_name;
                                 requestData.phoneNo = bvnVerificationResponse.results.personal_info.phone_number;
                                 requestData.transactionTrackingRef = userUid.Split("-").Last();  //DateTime.Now.Ticks.ToString(); //userUid.Split("-").Last();
                                 requestData.placeOfBirth = "NA";
