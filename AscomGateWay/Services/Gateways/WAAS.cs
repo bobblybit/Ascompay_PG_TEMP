@@ -953,7 +953,7 @@ namespace AscomPayPG.Services.Gateways
                 payload.merchant.merchantFeeAccount = "";
                 payload.narration = model.Narration;
                 payload.order.description = model.Description;
-                decimal amountToSend = decimal.Parse(model.Amount) + charges;
+                decimal amountToSend = decimal.Parse(model.Amount) + marchantCharge;
                 payload.order.amount = amountToSend.ToString();
                 payload.message = "";
                 payload.code = "";
