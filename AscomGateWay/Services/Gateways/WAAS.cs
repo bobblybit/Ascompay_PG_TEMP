@@ -103,12 +103,14 @@ namespace AscomPayPG.Services.Gateways
             PlainResponse respObj = new PlainResponse();
             PlainResponse respAccessToken = new PlainResponse();
             PlainResponse respWalletEnquiry = new PlainResponse();
+            OpenWalletRequest requestData = new OpenWalletRequest();
             string bvn = string.Empty;
             BlueSaltBvnVerificationResponseDTO bvnVerificationResponse = new BlueSaltBvnVerificationResponseDTO();
+            //bvnVerificationResponse.results = new Models.DTO.Results();
+            //bvnVerificationResponse.results.personal_info = new PersonalInfo();
             try
             {
                 respAccessToken = await GetAccessToken();
-                OpenWalletRequest requestData = new OpenWalletRequest();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 var appUser = await _context.Users.FirstOrDefaultAsync(x => x.UserUid == Guid.Parse(userUid));
