@@ -128,7 +128,7 @@ namespace AscomPayPG.Services.Gateways
                         else
                         {
                             respObj.IsSuccessful = false;
-                            respObj.Message = "Complete Kyc Verification to continue";
+                            respObj.Message = "Please Complete Kyc Verification to continue";
                             respObj.Data = null;
                             return respObj;
                         }
