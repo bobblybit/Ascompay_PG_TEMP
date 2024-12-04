@@ -120,7 +120,7 @@ namespace AscomPayPG.Services.Gateways
                     var UserExternalWalletEntity = await _context.UserExternalWallets.FirstOrDefaultAsync(x => x.UserUId == appUser.UserUid.ToString());
                     if (UserExternalWalletEntity == null)
                     {
-                        var KycEntity = await _context.UserKycs.FirstOrDefaultAsync(x => x.UserUid == Guid.Parse(userUid) && x.BlueSaltBVNVerificationResponse != null && x.DocumentType.ToLower() == "bvn" && x.DocumentNumber != null);
+                        var KycEntity = await _context.UserKycs.FirstOrDefaultAsync(x => x.UserUid == Guid.Parse(userUid) && string.IsNullOrEmpty(x.BlueSaltBVNVerificationResponse) == false  && x.DocumentType.ToLower() == "bvn" && x.DocumentNumber != null);
                         if (KycEntity != null)
                         {
                             bvn = KycEntity.DocumentNumber;
