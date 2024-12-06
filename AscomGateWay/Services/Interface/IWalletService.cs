@@ -1,4 +1,5 @@
-﻿using AscomPayPG.Models.Shared;
+﻿using AscomPayPG.Models.DTO;
+using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
 
 namespace AscomPayPG.Services.Interface
@@ -16,5 +17,11 @@ namespace AscomPayPG.Services.Interface
         public Task<PlainResponse> WalletDebit(DebitWalletRequest model);
         public Task<PlainResponse> WalletCredit(CreditWalletRequest model);
         Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model);
+
+
+        #region IMPLEMENTATION FOR ASCOMPAY WALLET
+        Task<UserWallet> GetIntenalWalletById(string  Id);
+        Task<bool> UpdateIntenalWallet(UserWallet walletToUpdate);
+        #endregion
     }
 }

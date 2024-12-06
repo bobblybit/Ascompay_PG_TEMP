@@ -1,9 +1,11 @@
 ﻿using AscomPayPG.Data;
 using AscomPayPG.Models;
+using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Gateways;
 using AscomPayPG.Services.Interface;
+using Microsoft.EntityFrameworkCore;
 
 namespace AscomPayPG.Services.Implementation
 {
@@ -12,7 +14,7 @@ namespace AscomPayPG.Services.Implementation
         private IConfiguration _configuration;
         private readonly AppDbContext _context;
         private readonly IClientRequestRepository<ClientRequest> _clientRequestRepo;
-    
+
         WAAS waas;
 
         public WalletService(IConfiguration configuration,
@@ -22,7 +24,7 @@ namespace AscomPayPG.Services.Implementation
             _configuration = configuration;
             _context = context;
             _clientRequestRepo = clientRequestRepo;
-            waas = new WAAS(_configuration,context, _clientRequestRepo);
+            waas = new WAAS(_configuration, context, _clientRequestRepo);
         }
         public async Task<PlainResponse> AccessToken()
         {
@@ -200,6 +202,14 @@ namespace AscomPayPG.Services.Implementation
             }
             return response;
         }
+
+        public async Task<UserWallet> GetIntenalWalletById(string Id) => await _context.UserWallets.FirstOrDefaultAsync(x => x.WalletUID.ToString() == Id);
+        public async Task<bool> UpdateIntenalWallet(UserWallet walletToUpdate)
+        {
+             _context.UserWallets.Update(walletToUpdate);
+            return _context.SaveChanges() > 0;
+        }
+
     }
 }
 

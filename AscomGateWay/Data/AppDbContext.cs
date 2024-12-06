@@ -53,7 +53,6 @@ namespace AscomPayPG.Data
         public DbSet<BlueSaltBVNVerificationLog> BlueSaltBVNVerificationLogs { get; set; }
         public DbSet<UserDeviceInformation> UserDeviceInformation { get; set; }
         public DbSet<UserDeviceAuthentication> UserDeviceAuthentication { get; set; }
-
-
+        public DbSet<TransactionJournal> TransactionJournal { get; set; }
     }
 }

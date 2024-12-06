@@ -171,6 +171,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 var response = await RequestHelper.PostWithBody(NinePSBVatUrls.AirTimePurchase, content, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
+                
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
                 if (responseObj?.responseCode == "200")

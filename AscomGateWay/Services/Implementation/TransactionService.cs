@@ -889,6 +889,20 @@ namespace AscomPayPG.Services.Implementation
                     }
 
 
+                    var credit = await _clientRequestRepo.BuildCredit(requestModel.Amount, paymentProviderCharges, marchantCharge,
+                                                                      receiverWallet.WalletName, receiverWallet.UserUid.ToString(), senderAccount.AccountName, transactionReference,
+                                                                      requestModel.Amount + vat + charges, requestModel.Decription, requestModel.TransactionType, vat, charges,
+                                                                      PaymentProvider.AscomPay.ToString(), receiverWallet.WalletUID.ToString()
+                                                                      );
+
+                    var debit = await _clientRequestRepo.BuildDebit(requestModel.Amount, paymentProviderCharges, marchantCharge, receiverWallet.WalletName,
+                                                                    transactionReference, requestModel.Amount + vat + charges, requestModel.Decription, requestModel.TransactionType,
+                                                                    senderAccount.AccountName,
+                                                                    vat, charges, PaymentProvider.AscomPay.ToString(),
+                                                                    sourceAccount.AccountNumber
+                                                                    );
+
+                    var journalResponse = _clientRequestRepo.SaveTransactionJournal(new List<TransactionJournal> { debit, credit });
                     var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Completed.ToString());
 
                     return new PlainResponse
@@ -962,6 +976,18 @@ namespace AscomPayPG.Services.Implementation
 
                     var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Completed.ToString());
 
+                    var credit = await _clientRequestRepo.BuildCredit(requestModel.Amount, paymentProviderCharges, marchantCharge,
+                                                                       recieverAccount.AccountName, receiverWallet.UserUid.ToString(), sourceWallet.WalletName, transactionReference,
+                                                                      requestModel.Amount + vat + charges, requestModel.Decription, requestModel.TransactionType, vat, charges,
+                                                                      PaymentProvider.AscomPay.ToString(), recieverAccount.AccountNumber
+                                                                      );
+
+                    var debit = await _clientRequestRepo.BuildDebit(requestModel.Amount, paymentProviderCharges, marchantCharge, receiverWallet.WalletName,
+                                                                    transactionReference, requestModel.Amount + vat + charges, requestModel.Decription, requestModel.TransactionType,
+                                                                    sourceWallet.WalletName,
+                                                                    vat, charges, PaymentProvider.AscomPay.ToString(),
+                                                                    sourceWallet.WalletUID.ToString()
+                                                                    );
                     return new PlainResponse
                     {
                         IsSuccessful = true,
@@ -1037,9 +1063,20 @@ namespace AscomPayPG.Services.Implementation
                     if (response.IsSuccessful)
                     {
 
-                       // senderNewBalance = await UpdateSourceAccountBalance(sourceAccount, requestModel.Amount+charges, true);
+                        var credit = await _clientRequestRepo.BuildCredit(requestModel.Amount, paymentProviderCharges, marchantCharge,
+                                                                       recieverAccount.AccountName, recieverAccount.UserUid.ToString(), sourceAccount.AccountName, transactionReference,
+                                                                      requestModel.Amount + vat + charges, requestModel.Decription, requestModel.TransactionType, vat, charges,
+                                                                      PaymentProvider.AscomPay.ToString(), recieverAccount.AccountNumber
+                                                                      );
 
-                        NotifyForDebit(sender.Email, $"{sender.FirstName} {sender.LastName}",
+                        var debit = await _clientRequestRepo.BuildDebit(requestModel.Amount, paymentProviderCharges, marchantCharge, recieverAccount.AccountName,
+                                                                        transactionReference, requestModel.Amount + vat + charges, requestModel.Decription, requestModel.TransactionType,
+                                                                        sourceAccount.AccountName,
+                                                                        vat, charges, PaymentProvider.AscomPay.ToString(),
+                                                                        sourceAccount.AccountNumber);
+
+
+                            NotifyForDebit(sender.Email, $"{sender.FirstName} {sender.LastName}",
                        requestModel.Amount.ToString(), senderNewBalance.ToString(),
                        vat.ToString(), charges.ToString(), DateTime.Now.ToString(), requestModel.Decription, transactionReference);
 
@@ -1111,6 +1148,19 @@ namespace AscomPayPG.Services.Implementation
                     if (!creditResponse)
                     {
                         await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
+
+                        var credit = await _clientRequestRepo.BuildCredit(requestModel.Amount, paymentProviderCharges, marchantCharge,
+                                                                      receiverWallet.WalletName, receiverWallet.UserUid.ToString(), sourceWallet.WalletName, transactionReference,
+                                                                     requestModel.Amount + vat + charges, requestModel.Decription, requestModel.TransactionType, vat, charges,
+                                                                     PaymentProvider.AscomPay.ToString(), receiverWallet.WalletUID.ToString());
+
+                        var debit = await _clientRequestRepo.BuildDebit(requestModel.Amount, paymentProviderCharges, marchantCharge, receiverWallet.WalletName,
+                                                                        transactionReference, requestModel.Amount + vat + charges, requestModel.Decription, requestModel.TransactionType,
+                                                                        sourceWallet.WalletName,
+                                                                        vat, charges, PaymentProvider.AscomPay.ToString(),
+                                                                        sourceWallet.WalletUID.ToString());
+
+
                         return new PlainResponse
                         {
                             IsSuccessful = false,

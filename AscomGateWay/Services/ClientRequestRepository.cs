@@ -140,6 +140,211 @@ namespace AscomPayPG.Services
             return _context.SaveChanges() > 0;
         }
 
+        public async Task<TransactionJournal> BuildDebit(
+                                        decimal netAmount,
+                                        decimal providerCharges,
+                                        decimal marchantCharges,
+                                        string recieverName,
+                                        string transactionReference,
+                                        decimal amount,
+                                        string decription,
+                                        string trasactionType,
+                                        string SenderName,
+                                        decimal vat,
+                                        decimal charges,
+                                        string provider,
+                                        string userId,
+                                        string senderAccountOrSenderWallet = ""
+                                         )
+        {
+            return new TransactionJournal()
+            {
+                UserUID = userId,
+                Status = PaymentStatus.Completed.ToString(),
+                Timestamp = DateTime.Now,
+                AccessToken = Guid.NewGuid().ToString(),
+                Amount = amount,
+                Description = decription,
+                TransactionType = trasactionType,
+                PaymentAction = provider,
+                PaymentProvider = provider,
+                BankCode = (int)BankCodes.Ascom,
+                Currency = "NGN",
+                T_Vat = vat,
+                T_Charge = charges,
+                SenderName = SenderName,
+                RecieverName = recieverName,
+                NetAmount = "-" + netAmount.ToString(),
+                T_Marchant_Charges = marchantCharges,
+                T_Provider_Charges = providerCharges,
+                JournalType = JournalTypes.Debit.ToString(),
+                AccountOrWalletId  = senderAccountOrSenderWallet,
+                TransactionReference = transactionReference,
+            };
+        }
+
+
+  /*      public async Task<bool> LogDebit(
+                                          decimal netAmount,
+                                          decimal providerCharges,
+                                          decimal marchantCharges,
+                                          string recieverName,
+                                          User sender,
+                                          string transactionReference,
+                                          decimal amount,
+                                          string decription,
+                                          string trasactionType,
+                                          decimal vat,
+                                          decimal charges,
+                                          string provider,
+                                          string senderAccount = "",
+                                          string senderWallet = "",
+                                          bool setAsCompleted = false
+                                          )
+        {
+            var newTransaction = new TransactionJournal()
+            {
+                UserId = sender != null ? sender.UserId : null,
+                RequestTransactionId = transactionReference,
+                UserUID = sender != null ? sender.UserUid : null,
+                Status = setAsCompleted ? PaymentStatus.Completed.ToString() : PaymentStatus.Pending.ToString(),
+                Timestamp = DateTime.Now,
+                AccessToken = Guid.NewGuid().ToString(),
+                Amount = amount,
+                Email = sender != null ? sender.Email : "",
+                Description = decription,
+                TransactionType = trasactionType,
+                PaymentAction = provider,
+                PaymentProvider = provider,
+                BankCode = (int)BankCodes.Ascom,
+                Currency = "NGN",
+                T_Vat = vat,
+                T_Charge = charges,
+                SenderName = sender != null ? $"{sender.FirstName} " + $"{sender.MiddleName} {sender.LastName}" : string.Empty,
+                RecieverName = recieverName,
+                NetAmount = "-"+netAmount.ToString(),
+                T_Marchant_Charges = marchantCharges,
+                T_Provider_Charges = providerCharges,
+                JournalType = JournalTypes.Debit.ToString(),
+                AccountOrWalletId = !string.IsNullOrEmpty(senderAccount) ? senderAccount : senderWallet,
+                TransactionReference= transactionReference,
+                AccountNumberOrWalletName = !string.IsNullOrEmpty(senderAccount) ? senderAccount  : senderWallet,
+                User = sender,      
+            };
+
+            try
+            {
+                await _context.TransactionJournal.AddAsync(newTransaction);
+                return await _context.SaveChangesAsync() > 0;
+            }
+            catch (Exception EX)
+            {
+                throw;
+            }
+        }
+*/
+        public async Task<TransactionJournal> BuildCredit(
+                                        decimal netAmount,
+                                        decimal providerCharges,
+                                        decimal marchantCharges,
+                                        string recieverName,
+                                        string recieverId,
+                                        string senderName,
+                                        string transactionReference,
+                                        decimal amount,
+                                        string decription,
+                                        string trasactionType,
+                                        decimal vat,
+                                        decimal charges,
+                                        string provider,
+                                        string recieverAccountOrReceiverWallet = "")
+        {
+            return new TransactionJournal()
+            {
+                RequestTransactionId = transactionReference,
+                UserUID = recieverId,
+                Status = PaymentStatus.Pending.ToString(),
+                Timestamp = DateTime.Now,
+                AccessToken = Guid.NewGuid().ToString(),
+                Amount = amount,
+                Description = decription,
+                TransactionType = trasactionType,
+                PaymentAction = provider,
+                PaymentProvider = provider,
+                BankCode = (int)BankCodes.Ascom,
+                Currency = "NGN",
+                T_Vat = vat,
+                T_Charge = charges,
+                SenderName = senderName,
+                RecieverName = recieverName,
+                NetAmount = netAmount.ToString(),
+                T_Marchant_Charges = marchantCharges,
+                T_Provider_Charges = providerCharges,
+                JournalType = JournalTypes.Credit.ToString(),
+                AccountOrWalletId = recieverAccountOrReceiverWallet,
+                TransactionReference = transactionReference,
+            };
+        }
+/*
+        public async Task<bool> LogCredit(
+                                         decimal netAmount,
+                                         decimal providerCharges,
+                                         decimal marchantCharges,
+                                         string recieverName,
+                                         string recieverId,
+                                         string receiverEmail,
+                                         string senderName,
+                                         User receiver,
+                                         string transactionReference,
+                                         decimal amount,
+                                         string decription,
+                                         string trasactionType,
+                                         decimal vat,
+                                         decimal charges,
+                                         string provider,
+                                         string recieverAccount = "",
+                                         string recieverWallet = ""
+                                         )
+        {
+            var newTransaction = new TransactionJournal()
+            {
+                RequestTransactionId = transactionReference,
+                UserUID = new Guid(recieverId),
+                Status =  PaymentStatus.Pending.ToString(),
+                Timestamp = DateTime.Now,
+                AccessToken = Guid.NewGuid().ToString(),
+                Amount = amount,
+                Email = receiverEmail,
+                Description = decription,
+                TransactionType = trasactionType,
+                PaymentAction = provider,
+                PaymentProvider = provider,
+                BankCode = (int)BankCodes.Ascom,
+                Currency = "NGN",
+                T_Vat = vat,
+                T_Charge = charges,
+                SenderName = senderName,
+                RecieverName = recieverName,
+                NetAmount = netAmount.ToString(),
+                T_Marchant_Charges = marchantCharges,
+                T_Provider_Charges = providerCharges,
+                JournalType = JournalTypes.Credit.ToString(),
+                AccountOrWalletId = !string.IsNullOrEmpty(recieverAccount) ? recieverAccount  : recieverWallet,
+                TransactionReference = transactionReference,
+                AccountNumberOrWalletName = !string.IsNullOrEmpty(recieverAccount) ? recieverAccount  : recieverWallet,
+                User = receiver,
+            };
+
+            try
+            {
+                await _context.TransactionJournal.AddAsync(newTransaction);
+                return await _context.SaveChangesAsync() > 0;
+            }
+            catch (Exception EX)
+            {
+                throw;
+            }
+        }*/
         public async Task<bool> RegisterTransaction(
                                                   decimal netAmount,
                                                   decimal providerCharges,
@@ -191,6 +396,9 @@ namespace AscomPayPG.Services
                 T_Provider_Charges= providerCharges,
             };
 
+              
+
+
             try
             {
                  await _context.Transactions.AddAsync(newTransaction);
@@ -224,6 +432,12 @@ namespace AscomPayPG.Services
 
                 throw;
             }
+        }
+
+        public async Task<bool> SaveTransactionJournal(List<TransactionJournal> transactionJournals)
+        {
+           _context.TransactionJournal.AddRange(transactionJournals);
+            return _context.SaveChanges() > 0;
         }
     }
 }

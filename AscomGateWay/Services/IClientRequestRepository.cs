@@ -38,5 +38,36 @@ namespace AscomPayPG.Services
         public Task<bool> UpdateAccount(Account model);
         public Task<bool> AddTransaction(Transactions model);
         public Task<bool> UpdateTransactionStatusByReference(string referecneId, string newStatus);
+        public Task<TransactionJournal> BuildDebit(
+                                        decimal netAmount,
+                                        decimal providerCharges,
+                                        decimal marchantCharges,
+                                        string recieverName,
+                                        string transactionReference,
+                                        decimal amount,
+                                        string decription,
+                                        string trasactionType,
+                                        string SenderName,
+                                        decimal vat,
+                                        decimal charges,
+                                        string provider,
+                                        string userId,
+                                        string senderAccountOrSenderWallet = ""
+                                        );
+        public Task<TransactionJournal> BuildCredit(decimal netAmount,
+                                        decimal providerCharges,
+                                        decimal marchantCharges,
+                                        string recieverName,
+                                        string recieverId,
+                                        string senderName,
+                                        string transactionReference,
+                                        decimal amount,
+                                        string decription,
+                                        string trasactionType,
+                                        decimal vat,
+                                        decimal charges,
+                                        string provider,
+                                        string recieverAccountOrReceiverWallet = "");
+        public Task<bool> SaveTransactionJournal(List<TransactionJournal> transactionJournals);
     }
 }
