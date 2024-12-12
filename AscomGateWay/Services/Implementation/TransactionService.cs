@@ -1003,6 +1003,7 @@ namespace AscomPayPG.Services.Implementation
                 if (requestModel.TransactionType == TransactionTypes.TransferToAscomUsers.ToString())
                  {
                     recieverAccount = await _context.Accounts.FirstOrDefaultAsync( x => x.AccountNumber == requestModel.ReceiverAccountOrWallet);
+
                     if (recieverAccount == null)
                     {
                         return new PlainResponse
@@ -1016,6 +1017,27 @@ namespace AscomPayPG.Services.Implementation
                     reciever = await _clientRequestRepo.GetUser(recieverAccount.UserUid.ToString());
                     decimal senderNewBalance = 0;
                     sourceAccount = await _clientRequestRepo.GetUserAccount(requestModel.SenderAccountOrWallet);
+
+                   /* if (sourceAccount.AccountTeir == null)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = "Could verifer sender account tier",
+                            Data = 0,
+                        };
+                    }*/
+
+
+                  /*  if (requestModel.Amount > sourceAccount.AccountTeir.MaxSingleTransfer)
+                    {
+                        return new PlainResponse
+                        {
+                            IsSuccessful = false,
+                            Message = $"Exceeds maximum transfer unit. Maximum tranfer limit is {sourceAccount.AccountTeir.MaxSingleTransfer}",
+                            Data = 0,
+                        };
+                    }*/
 
                     if (sourceAccount == null)
                     {

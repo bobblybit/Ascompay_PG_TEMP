@@ -4,6 +4,7 @@ using AscomPayPG.Helpers.HTTPHelper.UrlHelper;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.VasModels;
 using AscomPayPG.Services.Gateways.Interface;
+using Nancy.Diagnostics;
 using Newtonsoft.Json;
 using System.Dynamic;
 using System.Net.Http;
@@ -165,13 +166,15 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
 
-                var payloadLoadAsJsonString = JsonConvert.SerializeObject(requestModel);
-                StringContent content = new StringContent(JsonConvert.SerializeObject(payloadLoadAsJsonString), Encoding.UTF8, "application/json");
+                /* var payloadLoadAsJsonString = JsonConvert.SerializeObject(requestModel);
+                 StringContent content = new StringContent(JsonConvert.SerializeObject(payloadLoadAsJsonString), Encoding.UTF8, "application/json");*/
+
+                StringContent content = new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
+
 
                 var response = await RequestHelper.PostWithBody(NinePSBVatUrls.AirTimePurchase, content, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
-                
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
                 if (responseObj?.responseCode == "200")
@@ -203,22 +206,10 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
 
-                var payloadLoadAsJsonString = JsonConvert.SerializeObject(requestModel);
-                StringContent content = new StringContent(JsonConvert.SerializeObject(payloadLoadAsJsonString), Encoding.UTF8, "application/json");
+                var payLoad =  new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
+            //    StringContent content = new StringContent(JsonConvert.SerializeObject(payLoad), Encoding.UTF8, "application/json");
 
-                var response =  RequestHelper.PostWithBodyA(NinePSBVatUrls.DataPurchase, header, content);
-                Console.WriteLine($"Response Content: {content}");
-
-                try
-                {
-                    string apiResponse2 = await response.Content.ReadAsStringAsync();
-
-                }
-                catch (Exception ex)
-                {
-
-                    throw;
-                }
+                var response =  RequestHelper.PostWithBodyA(NinePSBVatUrls.DataPurchase, header, payLoad);               
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
@@ -358,8 +349,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
 
-                var payloadLoadAsJsonString = JsonConvert.SerializeObject(requestModel);
-                StringContent content = new StringContent(JsonConvert.SerializeObject(payloadLoadAsJsonString), Encoding.UTF8, "application/json");
+                StringContent content = new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
 
                 var response = await RequestHelper.PostWithBody(NinePSBVatUrls.BillerInputValidate, content, header);
 
@@ -395,8 +385,8 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
 
-                var payloadLoadAsJsonString = JsonConvert.SerializeObject(requestModel);
-                StringContent content = new StringContent(JsonConvert.SerializeObject(payloadLoadAsJsonString), Encoding.UTF8, "application/json");
+                StringContent content = new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
+
 
                 var response = await RequestHelper.PostWithBody(NinePSBVatUrls.BillPayment, content, header);
 
