@@ -115,7 +115,7 @@ namespace TransactionSettlement
         }     
 
         // Method to process each transaction individually
-        private async Task<bool> ProcessTransaction(OfflineTransaction transaction)
+        private async Task<bool> ProcessTransaction(OfflineTransactionSec transaction)
         {
             try
             {
@@ -151,7 +151,7 @@ namespace TransactionSettlement
         }
 
         // Method to validate the details of a transaction
-        private async Task<bool> ValidateTransactionDetails(OfflineTransaction transaction)
+        private async Task<bool> ValidateTransactionDetails(OfflineTransactionSec transaction)
         {
             // Ensure sender and receiver wallet IDs are valid
             if (string.IsNullOrEmpty(transaction.SenderWalletId) || string.IsNullOrEmpty(transaction.ReceiverWalletId))
@@ -166,7 +166,7 @@ namespace TransactionSettlement
         }
 
         // Method to update sender and receiver wallet balances
-        private async Task<bool> UpdateWallets(OfflineTransaction transaction)
+        private async Task<bool> UpdateWallets(OfflineTransactionSec transaction)
         {
             // Get the sender and receiver wallets
             var senderWallet = await _walletService.GetIntenalWalletById(transaction.SenderWalletId);

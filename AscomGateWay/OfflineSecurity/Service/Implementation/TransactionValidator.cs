@@ -40,7 +40,7 @@ public class TransactionValidator : ITransactionValidator
     }
 
     // Method to log the details of the transaction
-    private void LogTransactionDetails(OfflineTransaction transaction)
+    private void LogTransactionDetails(OfflineTransactionSec transaction)
     {
         _logger.LogInformation($"Transaction {transaction.TransactionId} Details:");
         _logger.LogInformation($"- Sender Wallet ID: {transaction.SenderWalletId}");
@@ -51,7 +51,7 @@ public class TransactionValidator : ITransactionValidator
     }
 
     // Method to validate the hash of the transaction
-    public async Task<bool> ValidateTransaction(OfflineTransaction transactionsRequest)
+    public async Task<bool> ValidateTransaction(OfflineTransactionSec transactionsRequest)
     {
         // Step 1: Verify the signature with the public key
         bool isSignatureValid = VerifyTransactionHash(transactionsRequest);
@@ -67,12 +67,15 @@ public class TransactionValidator : ITransactionValidator
     }
 
     // Helper method to verify the transaction signature
-    public bool VerifyTransactionHash(OfflineTransaction transaction)
+    public bool VerifyTransactionHash(OfflineTransactionSec transaction)
     {
         var sendersUid = GetUserUidBySenderWalletId(transaction.SenderWalletId);
         // Recreate the transaction hash
-        string transactionDataToHash = $"{transaction.TransactionId}|{sendersUid}|{transaction.SenderWalletId}|{transaction.ReceiverWalletId}|{transaction.TransactionAmount}|{transaction.TransactionDate}";
+       
+        //TODO: Get user nonce
 
+        string transactionDataToHash = $"{transaction.TransactionId}|{sendersUid}|{transaction.SenderWalletId}|{transaction.ReceiverWalletId}|{transaction.TransactionAmount}|{transaction.TransactionDate}";
+        
         using (SHA256 sha256 = SHA256.Create())
         {
             byte[] transactionDataBytes = Encoding.UTF8.GetBytes(transactionDataToHash);

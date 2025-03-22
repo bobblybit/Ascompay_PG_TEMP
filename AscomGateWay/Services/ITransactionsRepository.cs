@@ -12,6 +12,5 @@ namespace AscomPayPG.Services
         public Task<Transactions> GetPayRequest(string requestId);
         public Task<bool> IsRequestTransactionIdAvailable(string requestId);
         public Task<Tuple<bool, string, string>> UpdateUserAccount(long itemId);
-
     }
 }

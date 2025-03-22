@@ -31,7 +31,7 @@ public class Account
     public DateTime? DateOfBirth { get; set; }
 
     public DateTime? AccountOpeningDate { get; set; }
-   // public string? AccountTeirId { get; set; }
-    //public AccountTeir? AccountTeir { get; set; }
+    public string? AccountTeirId { get; set; }
+    public AccountTeir? AccountTeir { get; set; }
 }
 

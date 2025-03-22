@@ -1,4 +1,5 @@
 using AscomPayPG.Models.DTO;
+using DB_MODALS.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AscomPayPG.Models;
@@ -45,8 +46,9 @@ public class AppdbContext : DbContext
     public DbSet<UserPasswordHistory> UserPasswordHistories { get; set; }
     public DbSet<UserDeviceInformation> UserDeviceInformation { get; set; }
     public DbSet<UserDeviceAuthentication> UserDeviceAuthentication { get; set; }
-    public DbSet<ExternalIntegrationLog> ThirdPartyCallLogs { get; set; }
-
+    public DbSet<AccountUpgrade> AccountUpgrades { get; set; }
+    public DbSet<AccountTeir> AccountTiers { get; set; }
+    public DbSet<ExternalIntegrationLog> ExternalIntegrationLogs { get; set; }
     public AppdbContext()
 	{
 	}

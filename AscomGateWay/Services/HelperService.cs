@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using RestSharp;
 using AscomPayPG.Data;
 using AscomPayPG.Models.DTO;
+using AscomPayPG.Helpers.HTTPHelper;
 
 namespace AscomPayPG.Services
 {
@@ -290,6 +291,30 @@ namespace AscomPayPG.Services
             catch (Exception ex) { Console.WriteLine(ex); return null; }
         }
 
+        public async Task<bool> ValidateTransaction(string accessToken, string senderAccount, string receiverAccount, decimal amount, string transactionType)
+        {
+            string url = _configuration["App:TransactionAuthentication"];
+            if (new[] { senderAccount, receiverAccount, accessToken }.Any(string.IsNullOrWhiteSpace))
+                return false;
 
+            var requestModel = new TransactionVerificationRequestDTO
+            {
+                Amount = amount.ToString(),
+                ReceiverAccount= receiverAccount,
+                SourceAccount= senderAccount,
+                Token = accessToken,
+                TransactionType= transactionType
+            };
+
+            var header = new Dictionary<string, string> { { "Authorization", $"Bearer {accessToken}" } };
+            StringContent content = new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
+            var response = await RequestHelper.PostWithBody(url, content);
+            string apiResponse = await response.Content.ReadAsStringAsync();
+            var responseObj = JsonConvert.DeserializeObject<ApiBaseResponse<TransactionVerificationResponseDTO>>(apiResponse);
+            
+            if (responseObj.Data.IsOk)
+                return true;
+            return false;
+        }
     }
 }

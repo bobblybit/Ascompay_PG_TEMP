@@ -1,8 +1,6 @@
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
-using AscomPayPG.Models.GTPay;
 using AscomPayPG.Models.Shared;
-using AscomPayPG.Models.ViewModels;
 
 namespace AscomPayPG.Services
 {
@@ -19,6 +17,6 @@ namespace AscomPayPG.Services
         public string Base64Encode(string plainText);
         public string Base64Decode(string base64EncodedData);
         public TransactionType GetOneTransactionType(int itemId);
-
+        public Task<bool> ValidateTransaction(string accessToken, string senderAccount, string receiverAccount, decimal amount, string transactionType);
     }
 }

@@ -22,6 +22,39 @@ namespace AscomPayPG.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
+            modelBuilder.Entity("AscomPayPG.Models.AccountTeir", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeprecated")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("MaxCumulativeBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MaxSingleTransfer")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AccountTiers");
+                });
+
             modelBuilder.Entity("AscomPayPG.Models.Bank", b =>
                 {
                     b.Property<int>("ID")
@@ -40,7 +73,36 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Banks", (string)null);
+                    b.ToTable("Banks");
+                });
+
+            modelBuilder.Entity("AscomPayPG.Models.BlueSaltBVNVerificationLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RequestPayload")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("RequestTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Response")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ResponseTime")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BlueSaltBVNVerificationLogs");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.ClientRequest", b =>
@@ -76,7 +138,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("ClientRequestId");
 
-                    b.ToTable("ClientRequests", (string)null);
+                    b.ToTable("ClientRequests");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.Account", b =>
@@ -95,6 +157,12 @@ namespace AscomPayPG.Migrations
 
                     b.Property<DateTime?>("AccountOpeningDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("AccountTeirId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("AccountTeirId1")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Bvn")
                         .HasColumnType("nvarchar(max)");
@@ -131,9 +199,11 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("AccountId");
 
+                    b.HasIndex("AccountTeirId1");
+
                     b.HasIndex("UserId");
 
-                    b.ToTable("Accounts", (string)null);
+                    b.ToTable("Accounts");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.TransactionsLog", b =>
@@ -186,7 +256,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("TransactionsLog", (string)null);
+                    b.ToTable("TransactionsLog");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.TransactionType", b =>
@@ -236,7 +306,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("SN");
 
-                    b.ToTable("TransactionType", (string)null);
+                    b.ToTable("TransactionType");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.User", b =>
@@ -354,7 +424,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.UserExternalWallet", b =>
@@ -459,7 +529,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("ExternalWalletId");
 
-                    b.ToTable("UserExternalWallets", (string)null);
+                    b.ToTable("UserExternalWallets");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.UserWallet", b =>
@@ -497,7 +567,7 @@ namespace AscomPayPG.Migrations
                     b.Property<string>("WalletName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("WalletTypeId")
+                    b.Property<Guid>("WalletTypeId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("WalletUID")
@@ -507,7 +577,9 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserWallets", (string)null);
+                    b.HasIndex("WalletTypeId");
+
+                    b.ToTable("UserWallets");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.ExternalIntegrationLog", b =>
@@ -542,7 +614,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ExternalIntegrationLogs", (string)null);
+                    b.ToTable("ExternalIntegrationLogs");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.PaymentGateway", b =>
@@ -570,7 +642,151 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("PaymentGatewayId");
 
-                    b.ToTable("PaymentGateways", (string)null);
+                    b.ToTable("PaymentGateways");
+                });
+
+            modelBuilder.Entity("AscomPayPG.Models.TransactionJournal", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("AccessToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AccountOrWalletId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("BankCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeprecated")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JournalType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NetAmount")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PaymentAction")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PaymentProvider")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RecieverName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SenderName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("T_Charge")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("T_Marchant_Charges")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("T_Provider_Charges")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("T_Vat")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TransactionReference")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TransactionType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserUID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TransactionJournal");
+                });
+
+            modelBuilder.Entity("AscomPayPG.Models.TransactionRetry", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateUpdated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Decription")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("HasbeenSettled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsOffline")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OfflineId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReceiverAccountName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReceiverAccountOrWallet")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReceiverWalletId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SenderAccountOrWallet")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SenderWalletId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TransactionType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("hasPostedSuccessfully")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("transactionId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TransactionRetries");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.Transactions", b =>
@@ -679,7 +895,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("PaymentGatewayId");
 
-                    b.ToTable("Transactions", (string)null);
+                    b.ToTable("Transactions");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.UserDeviceAuthentication", b =>
@@ -710,7 +926,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserDeviceAuthentication", (string)null);
+                    b.ToTable("UserDeviceAuthentication");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.UserDeviceInformation", b =>
@@ -753,7 +969,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserDeviceInformation", (string)null);
+                    b.ToTable("UserDeviceInformation");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.UserKyc", b =>
@@ -765,6 +981,12 @@ namespace AscomPayPG.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Kycid"), 1L, 1);
 
                     b.Property<string>("BackImage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BlueSaltBVNVerificationResponse")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BvnVerifiedName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CompanyName")
@@ -785,6 +1007,9 @@ namespace AscomPayPG.Migrations
                     b.Property<string>("FrontImage")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsBvnVerified")
+                        .HasColumnType("bit");
+
                     b.Property<bool?>("IsVerified")
                         .HasColumnType("bit");
 
@@ -802,7 +1027,34 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("Kycid");
 
-                    b.ToTable("UserKycs", (string)null);
+                    b.ToTable("UserKycs");
+                });
+
+            modelBuilder.Entity("AscomPayPG.Models.WalletType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeprecated")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WalletType");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.Webhook", b =>
@@ -841,7 +1093,124 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("WebhookId");
 
-                    b.ToTable("Webhook", (string)null);
+                    b.ToTable("Webhook");
+                });
+
+            modelBuilder.Entity("DB_MODALS.Entities.AccountUpgrade", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccountName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AccountNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ApprovalStatus")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Bvn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ChannelType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("City")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CustomerSignature")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeclineReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HouseNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IdCardBack")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IdCardFront")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("IdExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("IdIssueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IdNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IdType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeprecated")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LocalGovernment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NIN")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NearestLandmark")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Pep")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlaceOfBirth")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProofAddressURl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("State")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StreetName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UpgradeT0")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserPhoto")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UtilityBill")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AccountUpgrades");
                 });
 
             modelBuilder.Entity("TransactionsUser", b =>
@@ -856,14 +1225,20 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("TransactionsUser", (string)null);
+                    b.ToTable("TransactionsUser");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.Account", b =>
                 {
+                    b.HasOne("AscomPayPG.Models.AccountTeir", "AccountTeir")
+                        .WithMany()
+                        .HasForeignKey("AccountTeirId1");
+
                     b.HasOne("AscomPayPG.Models.DTO.User", null)
                         .WithMany("Accounts")
                         .HasForeignKey("UserId");
+
+                    b.Navigation("AccountTeir");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.TransactionsLog", b =>
@@ -889,7 +1264,15 @@ namespace AscomPayPG.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("AscomPayPG.Models.WalletType", "WalletType")
+                        .WithMany()
+                        .HasForeignKey("WalletTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("User");
+
+                    b.Navigation("WalletType");
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.Transactions", b =>

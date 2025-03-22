@@ -7,11 +7,21 @@
         Withdrawal,
         Reversal,
         Credit,
+        IncommingTransfer,
         WalletToAscomPayAccount,
         AscomPayAccountToWallet,
         TransferToAscomUsers,
         TransferToOthersBanks,
         WalletToWalletOffline,
-        WalletToWalletOnline
+        WalletToWalletOnline,
+        WalletToExternalOnline,
+        AirTimeTopUp,
+        DataTopUp,
+        Biller,
+        Deposit,
+        WalletToWalletTransafer,
+        OfflineTransaction,
+        AccountToWalletTopUp,
+        VAT
     }
 }

@@ -194,7 +194,7 @@ namespace AscomPayPG.Models.WAAS
     {
         public string accountNo { get; set; }
         public string narration { get; set; }
-        public double totalAmount { get; set; }
+        public decimal totalAmount { get; set; }
         public string transactionId { get; set; }
         public Merchant merchant { get; set; }
     }

@@ -1,19 +1,25 @@
-﻿using AscomPayPG.Helpers;
+﻿using AscomPayPG.Data;
+using AscomPayPG.Helpers;
 using AscomPayPG.Helpers.HTTPHelper;
 using AscomPayPG.Helpers.HTTPHelper.UrlHelper;
+using AscomPayPG.Models;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.VasModels;
 using AscomPayPG.Services.Gateways.Interface;
-using Nancy.Diagnostics;
 using Newtonsoft.Json;
 using System.Dynamic;
-using System.Net.Http;
 using System.Text;
 
 namespace AscomPayPG.Services.Gateways.Implementation
 {
     public class Vas9PSB : I9psbVaS
     {
+        private readonly AppDbContext _appdbContext;
+
+        public Vas9PSB(AppDbContext appdbContext) 
+        {
+            _appdbContext = appdbContext;
+        }    
         private async Task<VatAuthResponse> Authenticate()
         {
             try
@@ -175,6 +181,20 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 var response = await RequestHelper.PostWithBody(NinePSBVatUrls.AirTimePurchase, content, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
+
+                var log = new ExternalIntegrationLog
+                {
+                    CreatedBy = "Ascompay",
+                    RequestTime = DateTime.Now,
+                    RequestPayload = JsonConvert.SerializeObject(requestModel),
+                    Response = apiResponse,
+                    ResponseTime = DateTime.Now,
+                    Service = "Payment",
+                    Vendor = "9PSB",
+                };
+                _appdbContext.ExternalIntegrationLogs.Add(log);
+                _appdbContext.SaveChanges();
+
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
                 if (responseObj?.responseCode == "200")
@@ -212,6 +232,21 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 var response =  RequestHelper.PostWithBodyA(NinePSBVatUrls.DataPurchase, header, payLoad);               
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
+
+
+                var log = new ExternalIntegrationLog
+                {
+                    CreatedBy = "Ascompay",
+                    RequestTime = DateTime.Now,
+                    RequestPayload = JsonConvert.SerializeObject(requestModel),
+                    Response = apiResponse,
+                    ResponseTime = DateTime.Now,
+                    Service = "Payment",
+                    Vendor = "9PSB",
+                };
+                _appdbContext.ExternalIntegrationLogs.Add(log);
+                _appdbContext.SaveChanges();
+
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
                 if (responseObj?.responseCode == "200")
@@ -318,6 +353,8 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 var response = await RequestHelper.Get(NinePSBVatUrls.BillerInputFields.Replace("[billerId]", billerId), header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
+
+
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
                 if (responseObj?.responseCode == "200")
@@ -391,18 +428,34 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 var response = await RequestHelper.PostWithBody(NinePSBVatUrls.BillPayment, content, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
+
+                var log = new ExternalIntegrationLog
+                {
+                    CreatedBy = "Ascompay",
+                    RequestTime = DateTime.Now,
+                    RequestPayload = JsonConvert.SerializeObject(requestModel),
+                    Response = apiResponse,
+                    ResponseTime = DateTime.Now,
+                    Service = "Payment",
+                    Vendor = "9PSB",
+                };
+                _appdbContext.ExternalIntegrationLogs.Add(log);
+                _appdbContext.SaveChanges();
+
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
-                if (responseObj?.code == "00")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                if (responseObj?.status == "failed")
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, ResponseCode = int.Parse(responseObj.responseCode) };
                 else
                     return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+                return new PlainResponse { IsSuccessful = false, Message = ex.Message, Data = null };
             }
         }
+
+
         public async Task<PlainResponse> GetBillerPaymentStatus(string transactionReferenceId)
         {
             try

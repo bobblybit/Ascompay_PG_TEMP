@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AscomPayPG.Models
 {
-    public class TransactionJournal : BaseEntity
+    public class TransactionJournal
     {
         public TransactionJournal()
         {
@@ -13,6 +13,11 @@ namespace AscomPayPG.Models
         }
 
         [Key]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public bool IsActive { get; set; }
+        public bool IsDeprecated { get; set; }
+        public DateTime DateCreated { get; set; } = DateTime.Now;
+        public DateTime LastUpdated { get; set; } = DateTime.Now;
         public string? TransactionReference { get; set; }
         public string? SenderName { get; set; }
         public string? RecieverName { get; set; }
@@ -27,7 +32,6 @@ namespace AscomPayPG.Models
         public string? Description { get; set; }
         public string? PaymentAction { get; set; }
         public string? AccessToken { get; set; }
-        public string? RequestTransactionId { get; set; }
         public decimal T_Charge { get; set; }
         public decimal T_Vat { get; set; }
         public decimal T_Provider_Charges { get; set; }

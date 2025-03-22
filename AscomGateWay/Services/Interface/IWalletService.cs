@@ -17,6 +17,8 @@ namespace AscomPayPG.Services.Interface
         public Task<PlainResponse> WalletDebit(DebitWalletRequest model);
         public Task<PlainResponse> WalletCredit(CreditWalletRequest model);
         Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model);
+        Task<PlainResponse> WalletUpgradeTier3multipart(WalletUpgradeTier3Request model);
+        Task<PlainResponse> WalletUpgradeTier2(WalletUpgradeTier2Request model);
 
 
         #region IMPLEMENTATION FOR ASCOMPAY WALLET

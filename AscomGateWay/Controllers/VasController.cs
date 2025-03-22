@@ -1,4 +1,5 @@
 ﻿using AscomPayPG.Models.VasModels;
+using AscomPayPG.Services.Filters;
 using AscomPayPG.Services.Interface;
 using Microsoft.AspNetCore.Mvc;
 
@@ -108,6 +109,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("airtime-top-up")]
+        [ServiceFilter(typeof(VasTransactionValidator))]
         public async Task<IActionResult> PurchaseAirtime([FromBody] AirTimeTopUpRequest model, [FromQuery]string userId)
         {
             var response = await _vasService.PurchaseAirtime(model, userId);
@@ -133,6 +135,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("data-top-up")]
+        [ServiceFilter(typeof(VasTransactionValidator))]
         public async Task<IActionResult> PurchaseData([FromBody] DataTopUpRequest model, [FromQuery] string userId)
         {
             var response = await _vasService.PurchaseData(model, userId);
@@ -142,7 +145,6 @@ namespace AscomPayPG.Controllers
                 return BadRequest(response);
         }
         #endregion
-
 
         /// <summary>
         ///  This endpoint provides a list of bills payment categories available to client
@@ -268,6 +270,7 @@ namespace AscomPayPG.Controllers
                 return BadRequest(response);
         }
 
+        
         /// <summary>
         ///  This endpoint initiates payment for VAS transactions. Some values from previous endpoints are required to build request for this endpoint.
         /// </summary>
@@ -284,6 +287,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("biller-payment")]
+        [ServiceFilter(typeof(VasTransactionValidator))]
         public async Task<IActionResult> InitBillerPayment([FromBody] InitaiteBillPaymentRequest requestModel)
         {
             var response = await _vasService.InitBillerPayment(requestModel);

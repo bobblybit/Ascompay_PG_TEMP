@@ -1,5 +1,7 @@
 ﻿using AscomPayPG.Data;
+using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.WAAS;
+using AscomPayPG.Services.Filters;
 using AscomPayPG.Services.Interface;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
@@ -15,12 +17,13 @@ namespace AscomPayPG.Controllers
     {
         private readonly IWalletService _walletService;
         private readonly AppDbContext _context;
+        private readonly IAccountService _accountService;
 
-
-        public WalletController(IWalletService walletService, AppDbContext context, ITransactionService transactionService)
+        public WalletController(IWalletService walletService, AppDbContext context, ITransactionService transactionService, IAccountService accountService)
         {
             _walletService = walletService;
             _context = context;
+            _accountService = accountService;
         }
         /// <summary>
         ///   This endpoint creates access token for authentication of other waas endpoints
@@ -50,6 +53,7 @@ namespace AscomPayPG.Controllers
                 return BadRequest(response);
             }
         }
+       
         /// <summary>
         ///   This endpoint creates 9PSB wallet
         /// </summary>
@@ -78,6 +82,37 @@ namespace AscomPayPG.Controllers
                 return BadRequest(response);
             }
         }
+
+        /// <summary>
+        ///   This endpoint creates upgrades accounts wallet
+        /// </summary>
+        /// <param name="model"></param>
+        /// <response code="200">Success</response>
+        /// <response code="401">Unauthorized</response>
+        /// <response code="400">Bad Request</response>
+        /// <response code="415">method not allowed, This response is returned when this endpoint is called with HHTP Method other than a Get()</response>
+        /// <response code="500">Internal server error</response>
+        /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPost("upgrade-tier-3-multi-part")]
+        public async Task<IActionResult> WalletUpgradeTier3multipart([FromBody] WalletUpgradeTier3Request model)
+        {
+            var response = await _walletService.WalletUpgradeTier3multipart(model);
+            if (response.IsSuccessful == true)
+            {
+                return Ok(response);
+            }
+            else
+            {
+                return BadRequest(response);
+            }
+        }
+
+
         /// <summary>
         ///   This endpoint gets wallet details using walletNo
         /// </summary>
@@ -322,6 +357,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("transfer-other-bank-9psb")]
+        [ServiceFilter(typeof(ExternalTransactionValidator))]
         public async Task<IActionResult> TransferOtherBanks([FromBody] OtherBankTransferDTO model)
         {
             var response = await _walletService.TransferOtherBank(model);
@@ -335,5 +371,34 @@ namespace AscomPayPG.Controllers
             }
         }
 
+
+        /// <summary>
+        ///   update account upgrade grade
+        /// </summary>
+        /// <param name="model"></param>
+        /// <response code="200">Success</response>
+        /// <response code="401">Unauthorized</response>
+        /// <response code="400">Bad Request</response>
+        /// <response code="415">method not allowed, This response is returned when this endpoint is called with HHTP Method other than a Get()</response>
+        /// <response code="500">Internal server error</response>
+        /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPost("upgrade-request-update")]
+        public async Task<IActionResult> WalletUpgradeTier3multipart([FromBody] UpdateUpgradeRequestDTO model)
+        {
+            var response = await _accountService.UpdateTierAccountUpgradeStatus(model.RequestId, model.NewStatus, model.RejectionComment);
+            if (response.IsSuccessful == true)
+            {
+                return Ok(response);
+            }
+            else
+            {
+                return BadRequest(response);
+            }
+        }
     }
 }

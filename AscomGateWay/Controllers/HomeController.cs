@@ -4,6 +4,7 @@ using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.ViewModels;
 using AscomPayPG.Services;
+using AscomPayPG.Services.Filters;
 using AscomPayPG.Services.Interface;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http.Extensions;
@@ -222,7 +223,7 @@ namespace AscomPayPG.Controllers
         }
 
         [HttpPost("transfer")]
-       // [ValidateCustomToken]
+        [ServiceFilter(typeof(InternalTransactionValidator))]
         public async Task<IActionResult> TransferFund([FromBody] TransferRequestDTO mdoel)
         {
             var reponse = await _transactionService.TransferFundInternal(mdoel);

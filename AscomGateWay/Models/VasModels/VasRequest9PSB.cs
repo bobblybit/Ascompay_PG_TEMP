@@ -27,6 +27,8 @@
         public string customerId { get; set; }
         public string amount { get; set; }
         public string billerId { get; set; }
+        public string itemId { get; set; }
+
     }
     public class InitaiteBillPaymentRequest
     {
@@ -34,6 +36,7 @@
         public string billerId { get; set; }
         public string? customerPhone { get; set; }
         public string? customerName { get; set; }
+        public string itemId { get; set; }
         public string otherField { get; set; }
         public string? debitAccount { get; set; }
         public string amount { get; set; }

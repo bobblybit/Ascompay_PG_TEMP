@@ -99,10 +99,10 @@ namespace AscomPayPG.Services
         }
 
         public async Task<Account> GetUserAccount(string destination)
-                 => await _context.Accounts.FirstOrDefaultAsync(x => x.AccountNumber == destination || x.AccountId == Convert.ToInt64(destination));
+                 => await _context.Accounts.Include(x => x.AccountTeir).FirstOrDefaultAsync(x => x.AccountNumber == destination || x.AccountId == Convert.ToInt64(destination));
 
         public async Task<Account> GetAccount(string destination)
-                => await _context.Accounts.FirstOrDefaultAsync(x => x.AccountNumber == destination);
+                => await _context.Accounts.Include(x => x.AccountTeir).FirstOrDefaultAsync(x => x.AccountNumber == destination);
 
         public async Task<Account> GetUserAccountByUserUid(string userUid)
                 => await _context.Accounts.FirstOrDefaultAsync(x => x.UserUid == Guid.Parse(userUid));
@@ -160,10 +160,10 @@ namespace AscomPayPG.Services
             return new TransactionJournal()
             {
                 UserUID = userId,
-                Status = PaymentStatus.Completed.ToString(),
+                Status = PaymentStatus.Successful.ToString(),
                 Timestamp = DateTime.Now,
                 AccessToken = Guid.NewGuid().ToString(),
-                Amount = amount,
+                Amount = amount * -1,
                 Description = decription,
                 TransactionType = trasactionType,
                 PaymentAction = provider,
@@ -261,9 +261,8 @@ namespace AscomPayPG.Services
         {
             return new TransactionJournal()
             {
-                RequestTransactionId = transactionReference,
                 UserUID = recieverId,
-                Status = PaymentStatus.Pending.ToString(),
+                Status = PaymentStatus.Successful.ToString(),
                 Timestamp = DateTime.Now,
                 AccessToken = Guid.NewGuid().ToString(),
                 Amount = amount,
@@ -370,7 +369,7 @@ namespace AscomPayPG.Services
                 UserId = sender != null ? sender.UserId : null,
                 RequestTransactionId = transactionReference,
                 UserUID = sender != null ? sender.UserUid : null,
-                Status = setAsCompleted ?   PaymentStatus.Completed.ToString() : PaymentStatus.Pending.ToString(),
+                Status = setAsCompleted ?   PaymentStatus.Successful.ToString() : PaymentStatus.Pending.ToString(),
                 StatusId = 1,
                 Timestamp = DateTime.Now,
                 AccessToken = Guid.NewGuid().ToString(),
@@ -396,14 +395,10 @@ namespace AscomPayPG.Services
                 T_Provider_Charges= providerCharges,
             };
 
-              
-
-
             try
             {
                  await _context.Transactions.AddAsync(newTransaction);
                 return await _context.SaveChangesAsync() > 0;
-
             }
             catch (Exception EX)
             {
@@ -417,6 +412,7 @@ namespace AscomPayPG.Services
             try
             {
                 var transaction = await _context.Transactions.FirstOrDefaultAsync(trans => trans.RequestTransactionId == referecneId);
+                
                 if (transaction == null)
                     return false;
                 transaction.Status = newStatus;
@@ -436,8 +432,18 @@ namespace AscomPayPG.Services
 
         public async Task<bool> SaveTransactionJournal(List<TransactionJournal> transactionJournals)
         {
-           _context.TransactionJournal.AddRange(transactionJournals);
-            return _context.SaveChanges() > 0;
+            foreach (var journal in transactionJournals)
+            {
+                var trackedEntity = _context.ChangeTracker.Entries<TransactionJournal>()
+                    .FirstOrDefault(e => e.Entity.TransactionReference == journal.TransactionReference);
+
+                if (trackedEntity != null)
+                {
+                    _context.Entry(trackedEntity.Entity).State = EntityState.Detached;
+                }
+            }
+            _context.TransactionJournal.AddRange(transactionJournals);
+            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

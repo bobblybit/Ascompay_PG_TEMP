@@ -2,10 +2,10 @@
 {
     public class OfflineTransactionRequest
     {
-        public List<OfflineTransaction> OfflineTransactions { get; set; }
+        public List<OfflineTransactionSec> OfflineTransactions { get; set; }
         public Key keys { get; set; }
     }
-    public class OfflineTransaction
+    public class OfflineTransactionSec
     {
         public string TransactionId { get; set; } //ensure uniquness of each transaction
         public string SenderWalletId { get; set; }

@@ -1,7 +1,5 @@
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace AscomPayPG.Models;

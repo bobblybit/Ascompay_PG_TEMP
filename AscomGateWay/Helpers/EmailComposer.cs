@@ -18,6 +18,19 @@ public class EmailComposer
     private static string templateFolder = "templates";
     public static string baseUrl = _configuration["cdn:base_url"];
 
+    public static string ComposeEmailForMeterToken(string userName, string token)
+    {
+        //user  amount description time reference currentdate balance
+        string body = string.Empty;
+        string filename = "MetreToken_Notification.html";
+        string path = Path.Combine(rootdir, folderPath, templateFolder, filename);
+        body = File.ReadAllText(path);
+
+        body = body.Replace("{user}", userName);
+        body = body.Replace("{Token}", token);
+        return body;
+    }
+
     public static string ComposeCreditOrDebitNotificationHtmlContent(TransactionAlertNotificationDTO model, bool isCredit)
     {
         //user  amount description time reference currentdate balance
