@@ -31,7 +31,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
 
                 var payload = new AuthenticationRequestModeL { username = userName, password = password };
                 StringContent content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
-                var response = await RequestHelper.PostWithBody(NinePSBVatUrls.Authenticate, content);
+                var response = await RequestHelper.PostWithBody(NinePSBVatUrls.PGM_Authenticate, content);
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
@@ -48,41 +48,6 @@ namespace AscomPayPG.Services.Gateways.Implementation
         }
 
         #region TOP-UP
-        public async Task<PlainResponse> GetDataPlans(string phoneNumber)
-        {
-            try
-            {
-                dynamic responseObj = new ExpandoObject();
-
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                         Data = null,
-                         IsSuccessful= false,
-                         Message = tokenResponse.Token,
-                         ResponseCode= 200
-                    };
-                }
-                
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var url = NinePSBVatUrls.DataPlans.Replace("[phoneNumber]", phoneNumber);
-                var response = await RequestHelper.Get(url, header);
-
-                    string apiResponse = await response.Content.ReadAsStringAsync();
-                    responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-
-                if (responseObj?.responseCode == "200")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
-                else
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
-            }
-            catch (Exception ex)
-            {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
-            }
-        }
         public async Task<PlainResponse> GetPhoneNetwork(string phoneNumber)
         {
             try
@@ -102,11 +67,59 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
 
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var URL = NinePSBVatUrls.PhoneNetworks.Replace("[phoneNumber]", phoneNumber);
+                var URL = NinePSBVatUrls.PGM_PhoneNetworks.Replace("[phoneNumber]", phoneNumber);
+                var RequestTime = DateTime.Now;
                 var response = await RequestHelper.Get(URL, header);
-
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+
+                var log = new ExternalIntegrationLog
+                {
+                    CreatedBy = "Ascompay",
+                    RequestTime = RequestTime,
+                    RequestPayload = JsonConvert.SerializeObject(URL),
+                    Response = apiResponse,
+                    ResponseTime = DateTime.Now,
+                    Service = "Payment",
+                    Vendor = "9PSB",
+                };
+                _appdbContext.ExternalIntegrationLogs.Add(log);
+                _appdbContext.SaveChanges();
+
+                if (responseObj?.responseCode == "200")
+                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                else
+                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
+            }
+            catch (Exception ex)
+            {
+                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+            }
+        }
+        public async Task<PlainResponse> GetDataPlans(string phoneNumber)
+        {
+            try
+            {
+                dynamic responseObj = new ExpandoObject();
+
+                var tokenResponse = await Authenticate();
+                if (!tokenResponse.IsSuccessfull)
+                {
+                    return new PlainResponse()
+                    {
+                         Data = null,
+                         IsSuccessful= false,
+                         Message = tokenResponse.Token,
+                         ResponseCode= 200
+                    };
+                }
+                
+                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
+                var url = NinePSBVatUrls.PGM_DataPlans.Replace("[phoneNumber]", phoneNumber);
+                var response = await RequestHelper.Get(url, header);
+
+                    string apiResponse = await response.Content.ReadAsStringAsync();
+                    responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
 
                 if (responseObj?.responseCode == "200")
                     return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
@@ -137,7 +150,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
 
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var url = NinePSBVatUrls.TransactionStatus.Replace("[transReference]", transactionReferenceId);
+                var url = NinePSBVatUrls.PGM_TransactionStatus.Replace("[transReference]", transactionReferenceId);
                 var response = await RequestHelper.Get(url, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
@@ -178,14 +191,16 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 StringContent content = new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
 
 
-                var response = await RequestHelper.PostWithBody(NinePSBVatUrls.AirTimePurchase, content, header);
+                var RequestTime = DateTime.Now;
+                var response = await RequestHelper.PostWithBody(NinePSBVatUrls.PGM_AirTimePurchase, content, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
+
 
                 var log = new ExternalIntegrationLog
                 {
                     CreatedBy = "Ascompay",
-                    RequestTime = DateTime.Now,
+                    RequestTime = RequestTime,
                     RequestPayload = JsonConvert.SerializeObject(requestModel),
                     Response = apiResponse,
                     ResponseTime = DateTime.Now,
@@ -229,7 +244,8 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 var payLoad =  new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
             //    StringContent content = new StringContent(JsonConvert.SerializeObject(payLoad), Encoding.UTF8, "application/json");
 
-                var response =  RequestHelper.PostWithBodyA(NinePSBVatUrls.DataPurchase, header, payLoad);               
+                var RequestTime = DateTime.Now;
+                var response =  RequestHelper.PostWithBodyA(NinePSBVatUrls.PGM_DataPurchase, header, payLoad);               
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
 
@@ -237,7 +253,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 var log = new ExternalIntegrationLog
                 {
                     CreatedBy = "Ascompay",
-                    RequestTime = DateTime.Now,
+                    RequestTime = RequestTime,
                     RequestPayload = JsonConvert.SerializeObject(requestModel),
                     Response = apiResponse,
                     ResponseTime = DateTime.Now,
@@ -281,7 +297,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
 
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var response = await RequestHelper.Get(NinePSBVatUrls.BillCategories, header);
+                var response = await RequestHelper.Get(NinePSBVatUrls.PGM_BillCategories, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
@@ -315,7 +331,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
 
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var url = NinePSBVatUrls.CategoryBiller.Replace("[categoryId]", categoryId);
+                var url = NinePSBVatUrls.PGM_CategoryBiller.Replace("[categoryId]", categoryId);
                 var response = await RequestHelper.Get(url, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
@@ -350,7 +366,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
 
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var response = await RequestHelper.Get(NinePSBVatUrls.BillerInputFields.Replace("[billerId]", billerId), header);
+                var response = await RequestHelper.Get(NinePSBVatUrls.PGM_BillerInputFields.Replace("[billerId]", billerId), header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
 
@@ -388,7 +404,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
 
                 StringContent content = new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
 
-                var response = await RequestHelper.PostWithBody(NinePSBVatUrls.BillerInputValidate, content, header);
+                var response = await RequestHelper.PostWithBody(NinePSBVatUrls.PGM_BillerInputValidate, content, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
                 responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
@@ -425,7 +441,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 StringContent content = new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
 
 
-                var response = await RequestHelper.PostWithBody(NinePSBVatUrls.BillPayment, content, header);
+                var response = await RequestHelper.PostWithBody(NinePSBVatUrls.PGM_BillPayment, content, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
 
@@ -454,8 +470,6 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 return new PlainResponse { IsSuccessful = false, Message = ex.Message, Data = null };
             }
         }
-
-
         public async Task<PlainResponse> GetBillerPaymentStatus(string transactionReferenceId)
         {
             try
@@ -475,7 +489,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 }
 
                 var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var url = NinePSBVatUrls.BillPaymentStatus.Replace("[transReference]", transactionReferenceId);
+                var url = NinePSBVatUrls.PGM_BillPaymentStatus.Replace("[transReference]", transactionReferenceId);
                 var response = await RequestHelper.Get(url, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();

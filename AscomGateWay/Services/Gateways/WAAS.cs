@@ -183,7 +183,7 @@ namespace AscomPayPG.Services.Gateways
                         {
                             httpClient.DefaultRequestHeaders.Accept.Clear();
                             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                            fullUrl = $"{baseUrl}api/{version}/open_wallet";
+                            fullUrl = $"{baseUrl}api/waas/open_wallet";
                             StringContent content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
                             using (var response = await httpClient.PostAsync(fullUrl, content))
                             {
@@ -326,7 +326,7 @@ namespace AscomPayPG.Services.Gateways
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/{version}/wallet_enquiry";
+                    fullUrl = $"{baseUrl}api/waas/wallet_enquiry";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -407,7 +407,7 @@ namespace AscomPayPG.Services.Gateways
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/{version}/walletUpgrade-tier3-base64";
+                    fullUrl = $"{baseUrl}api/waas/upgrade-tier-3-multi-part";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -568,7 +568,7 @@ namespace AscomPayPG.Services.Gateways
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/{version}/wallet_status";
+                    fullUrl = $"{baseUrl}api/wallet-status";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -654,7 +654,7 @@ namespace AscomPayPG.Services.Gateways
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/{version}/get_wallet";
+                    fullUrl = $"{baseUrl}api/get_wallet";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(getWalletRequest), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -728,7 +728,7 @@ namespace AscomPayPG.Services.Gateways
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/{version}/change_wallet_status";
+                    fullUrl = $"{baseUrl}api/change_wallet_status";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -789,7 +789,7 @@ namespace AscomPayPG.Services.Gateways
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/{version}/wallet_transactions";
+                    fullUrl = $"{baseUrl}api/wallet_transactions";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -863,7 +863,7 @@ namespace AscomPayPG.Services.Gateways
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/{version}/wallet_requery";
+                    fullUrl = $"{baseUrl}api/wallet_requery";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -937,7 +937,7 @@ namespace AscomPayPG.Services.Gateways
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/{version}/debit/transfer";
+                    fullUrl = $"{baseUrl}api/debit/transfer";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -1011,7 +1011,7 @@ namespace AscomPayPG.Services.Gateways
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/{version}/credit/transfer";
+                    fullUrl = $"{baseUrl}api/wallet-credit";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -1173,7 +1173,7 @@ namespace AscomPayPG.Services.Gateways
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/{version}/wallet_other_banks";
+                    fullUrl = $"{baseUrl}api/transfer-other-bank-9psb";
 
                     var settings = new JsonSerializerSettings
                     {
@@ -1378,7 +1378,7 @@ namespace AscomPayPG.Services.Gateways
             {
                 httpClient.DefaultRequestHeaders.Accept.Clear();
                 httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                fullUrl = $"{baseUrl}api/{version}/other_banks_enquiry";
+                fullUrl = $"{baseUrl}api/account-look-up";
 
                 var payloadLoadAsJsonString = JsonConvert.SerializeObject(requestPayLoad);
 
@@ -1389,7 +1389,7 @@ namespace AscomPayPG.Services.Gateways
                     RequestTime = DateTime.Now,
                     RequestPayload = payloadLoadAsJsonString,
                     Vendor = "9PSB",
-                    Service = "Wallet/other_banks_enquiry"
+                    Service = "account-look-up"
                 };
 
                 StringContent content = new StringContent(payloadLoadAsJsonString, Encoding.UTF8, "application/json");
