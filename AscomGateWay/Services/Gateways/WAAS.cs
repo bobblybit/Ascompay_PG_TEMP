@@ -115,7 +115,7 @@ namespace AscomPayPG.Services.Gateways
             //bvnVerificationResponse.results.personal_info = new PersonalInfo();
             try
             {
-                respAccessToken = await GetAccessToken();
+                //respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 var appUser = await _context.Users.FirstOrDefaultAsync(x => x.UserUid == Guid.Parse(userUid));
@@ -182,7 +182,7 @@ namespace AscomPayPG.Services.Gateways
                         using (var httpClient = new HttpClient())
                         {
                             httpClient.DefaultRequestHeaders.Accept.Clear();
-                            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                          //  httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
                             fullUrl = $"{baseUrl}api/waas/open_wallet";
                             StringContent content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
                             using (var response = await httpClient.PostAsync(fullUrl, content))
@@ -315,7 +315,7 @@ namespace AscomPayPG.Services.Gateways
             string bvn = string.Empty;
             try
             {
-                respAccessToken = await GetAccessToken();
+               // respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
@@ -325,7 +325,7 @@ namespace AscomPayPG.Services.Gateways
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                  //  httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
                     fullUrl = $"{baseUrl}api/waas/wallet_enquiry";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
@@ -396,7 +396,7 @@ namespace AscomPayPG.Services.Gateways
             string bvn = string.Empty;
             try
             {
-                respAccessToken = await GetAccessToken();
+                //respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
@@ -406,7 +406,7 @@ namespace AscomPayPG.Services.Gateways
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                   // httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
                     fullUrl = $"{baseUrl}api/waas/upgrade-tier-3-multi-part";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
@@ -473,7 +473,7 @@ namespace AscomPayPG.Services.Gateways
             string bvn = string.Empty;
             try
             {
-                respAccessToken = await GetAccessToken();
+               // respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
@@ -483,8 +483,8 @@ namespace AscomPayPG.Services.Gateways
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/{version}/wallet_upgrade";
+                    //httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                    fullUrl = $"{baseUrl}api/waas/wallet_upgrade";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -557,7 +557,7 @@ namespace AscomPayPG.Services.Gateways
             string bvn = string.Empty;
             try
             {
-                respAccessToken = await GetAccessToken();
+               // respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
@@ -567,8 +567,8 @@ namespace AscomPayPG.Services.Gateways
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/wallet-status";
+                   // httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                    fullUrl = $"{baseUrl}api/waas/wallet-status";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -632,7 +632,7 @@ namespace AscomPayPG.Services.Gateways
             string bvn = string.Empty;
             try
             {
-                respAccessToken = await GetAccessToken();
+               // respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
@@ -653,8 +653,8 @@ namespace AscomPayPG.Services.Gateways
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/get_wallet";
+                   // httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                    fullUrl = $"{baseUrl}api/waas/get_wallet";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(getWalletRequest), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -718,7 +718,7 @@ namespace AscomPayPG.Services.Gateways
             string bvn = string.Empty;
             try
             {
-                respAccessToken = await GetAccessToken();
+               // respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
@@ -727,8 +727,8 @@ namespace AscomPayPG.Services.Gateways
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/change_wallet_status";
+                  //  httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                    fullUrl = $"{baseUrl}api/waas/change_wallet_status";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -779,7 +779,7 @@ namespace AscomPayPG.Services.Gateways
             string bvn = string.Empty;
             try
             {
-                respAccessToken = await GetAccessToken();
+               // respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
@@ -788,8 +788,8 @@ namespace AscomPayPG.Services.Gateways
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/wallet_transactions";
+                    //httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                    fullUrl = $"{baseUrl}api/waas/wallet_transactions";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -853,7 +853,7 @@ namespace AscomPayPG.Services.Gateways
             string bvn = string.Empty;
             try
             {
-                respAccessToken = await GetAccessToken();
+                //respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
@@ -862,8 +862,8 @@ namespace AscomPayPG.Services.Gateways
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/wallet_requery";
+                   // httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                    fullUrl = $"{baseUrl}api/waas/wallet_requery";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -927,7 +927,7 @@ namespace AscomPayPG.Services.Gateways
             string bvn = string.Empty;
             try
             {
-                respAccessToken = await GetAccessToken();
+                //respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
@@ -936,8 +936,8 @@ namespace AscomPayPG.Services.Gateways
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/debit/transfer";
+                    //httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                    fullUrl = $"{baseUrl}api/waas/transfer";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -1001,7 +1001,7 @@ namespace AscomPayPG.Services.Gateways
             string bvn = string.Empty;
             try
             {
-                respAccessToken = await GetAccessToken();
+               // respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
@@ -1010,8 +1010,8 @@ namespace AscomPayPG.Services.Gateways
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/wallet-credit";
+                   // httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                    fullUrl = $"{baseUrl}api/waas/wallet-credit";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -1139,7 +1139,7 @@ namespace AscomPayPG.Services.Gateways
 
             try
             {
-                respAccessToken = await GetAccessToken();
+              //  respAccessToken = await GetAccessToken();
                 string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
@@ -1172,8 +1172,8 @@ namespace AscomPayPG.Services.Gateways
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/transfer-other-bank-9psb";
+                    //httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                    fullUrl = $"{baseUrl}api/waas/transfer-other-bank-9psb";
 
                     var settings = new JsonSerializerSettings
                     {
@@ -1368,7 +1368,7 @@ namespace AscomPayPG.Services.Gateways
             requestPayLoad.customer.account.number = accountLookupRequest.account_number;
             requestPayLoad.customer.account.bank = accountLookupRequest.bank_code;
 
-            var respAccessToken = await GetAccessToken();
+           // var respAccessToken = await GetAccessToken();
             string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
             string version = _configuration["WAASConfiguration:Version"];
             string fullUrl = string.Empty;
@@ -1377,8 +1377,8 @@ namespace AscomPayPG.Services.Gateways
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Accept.Clear();
-                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                fullUrl = $"{baseUrl}api/account-look-up";
+              //  httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
+                fullUrl = $"{baseUrl}api/waas/account-look-up";
 
                 var payloadLoadAsJsonString = JsonConvert.SerializeObject(requestPayLoad);
 

@@ -66,7 +66,7 @@ namespace AscomPayPG.Services.Gateways.Implementation
                     };
                 }
 
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
+               var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
                 var URL = NinePSBVatUrls.PGM_PhoneNetworks.Replace("[phoneNumber]", phoneNumber);
                 var RequestTime = DateTime.Now;
                 var response = await RequestHelper.Get(URL, header);
