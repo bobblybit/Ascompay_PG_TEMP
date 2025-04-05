@@ -41,21 +41,21 @@ try
 
     EncodeValue encode = new EncodeValue();
 
-    //var connection = await encode.decrypt(builder.Configuration.GetConnectionString("AppConnectionString"),1, Token);
-    //if(connection.isOk == false) throw new Exception($"Connection Failed : {connection.Message}");
-    var connection = builder.Configuration.GetConnectionString("AppConnectionString");
+    var connection = await encode.decrypt(builder.Configuration.GetConnectionString("AppConnectionString"),1, Token);
+    if(connection.isOk == false) throw new Exception($"Connection Failed : {connection.Message}");
+//    var connection = builder.Configuration.GetConnectionString("AppConnectionString");
 
-    builder.Services.AddDbContextPool<AppDbContext>(options =>
+   /* builder.Services.AddDbContextPool<AppDbContext>(options =>
             options.UseSqlServer(connection.ToString(),
             opts => opts.CommandTimeout(timeout)
-     ), (int)ServiceLifetime.Scoped);
+     ), (int)ServiceLifetime.Scoped);*/
 
     /*var connectionLog = await encode.decrypt(builder.Configuration.GetConnectionString("AppLogConnectionString"), 0, Token);
 
     if (connection.isOk == false) throw new Exception($"Connection Failed : {connection.Message}");*/
 
     builder.Services.AddDbContextPool<AppLogDBContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("AppLogConnectionString"),
+            options.UseSqlServer(builder.Configuration.GetConnectionString(connection.Message),
             opts => opts.CommandTimeout(timeout)
      ), (int)ServiceLifetime.Scoped);
 
