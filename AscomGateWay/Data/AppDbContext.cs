@@ -29,6 +29,7 @@ namespace AscomPayPG.Data
         public DbSet<Webhook> Webhook { get; set; }
         public DbSet<WalletType> WalletTypes { get; set; }
         public DbSet<UserExternalWallet> UserExternalWallets { get; set; }
+        public DbSet<AccountLookUpLog> AccountLookUpLog { get; set; }
 
         //public virtual DbSet<TransactionKey> TransactionKeys { get; set; }
 

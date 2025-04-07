@@ -3,6 +3,7 @@ using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using System;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -10,7 +11,9 @@ namespace AscomPayPG.Services
 {
     public class EncodeValue : IEncodeValue
     {
-
+        public EncodeValue()
+        {
+        }
         public async Task<ResponseMessage> decrypt(string data, int type, Guid Token)
         {
             IConfiguration _configuration = new ConfigurationBuilder()
@@ -67,8 +70,6 @@ namespace AscomPayPG.Services
 
             return Apiresponse;
         }
-
-
         public async Task<ResponseMessage> encrypt(string data, int type, Guid Token)
         {
             IConfiguration _configuration = new ConfigurationBuilder()
@@ -125,6 +126,5 @@ namespace AscomPayPG.Services
 
             return Apiresponse;
         }
-
     }
 }

@@ -1,10 +1,11 @@
-﻿using AscomPayPG.Models.DTO;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Text.Json;
 using System.Text;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Data.Enum;
+using AscomPayPG.Models.DTO;
+using Common.Extensions;
 
 namespace AscomPayPG.Services.Filters
 {
@@ -20,9 +21,19 @@ namespace AscomPayPG.Services.Filters
         {
             var request = context.HttpContext.Request;
             var transactionToken = context.HttpContext.Request.Headers["token"];
+
+            var lookUp = context.HttpContext.Request.Headers["lookup"];
+
+
             if (string.IsNullOrEmpty(transactionToken) || string.IsNullOrWhiteSpace(transactionToken))
             {
                 context.Result = new UnauthorizedObjectResult("Token is required"); ;
+                return;
+            }
+
+            if (string.IsNullOrEmpty(lookUp) || string.IsNullOrWhiteSpace(lookUp))
+            {
+                context.Result = new UnauthorizedObjectResult("lookUp is required"); ;
                 return;
             }
 
@@ -42,10 +53,19 @@ namespace AscomPayPG.Services.Filters
                             {
                                 PropertyNameCaseInsensitive = true // Ignore case differences in JSON keys
                             });
+
+
+                            var lookUpLog = _helperService.GetLookUpLog(requestModel.UserId, lookUp).Result;
+
+                            if (lookUpLog != null)
+                            {
+                                context.Result = new UnauthorizedObjectResult("lookUp is required"); ;
+                                return;
+                            }
                             // Do something with requestModel (e.g., logging, validation, etc.)
                             var response =  _helperService.ValidateTransaction(transactionToken,
                                                                                     requestModel.senderAccountNumber,
-                                                                                    requestModel.RecieverNumber,
+                                                                                    lookUpLog.AccountNumber,
                                                                                     decimal.Parse(requestModel.Amount),
                                                                                     TransactionTypes.TransferToOthersBanks.ToString()
                                                                                    ).Result;
@@ -63,6 +83,8 @@ namespace AscomPayPG.Services.Filters
                         }
                     }
                     // Reset the stream position for further reading
+                    var session = context.HttpContext.Session;
+                    session.SetObjectAsJson("lookUpLog", lookUp);
                     request.Body.Position = 0;
                 }
             }

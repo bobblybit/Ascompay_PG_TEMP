@@ -1,6 +1,4 @@
 using AscomPayPG.Models.Shared;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace AscomPayPG.Models.DTO;
@@ -62,6 +60,7 @@ public class User : BaseEntity
     public bool? IsAgent { get; set; }
     public bool? IsKycVerified { get; set; }
     public string? CompanyCode { get; set; }
+    public string? CurrentSession { get; set; }
     public string? UserCode { get; set; }
     public DateTime? DateCreated { get; set; } = DateTime.Now;
     public DateTime? LastUpdated { get; set; }

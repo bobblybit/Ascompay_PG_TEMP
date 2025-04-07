@@ -1,8 +1,10 @@
-﻿using AscomPayPG.Data;
+﻿using Ascom_Pay_Middleware.Filters;
+using AscomPayPG.Data;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.GTPay;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Interface;
+using Common.Extensions;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,12 +19,16 @@ namespace AscomPayPG.Controllers
     {
         private readonly ITransactionService _transactionService;
         private readonly AppDbContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IOfflineSettlementService _offlineSettlemen;
 
-        public TransactionController(ITransactionService transactionService, AppDbContext context, IOfflineSettlementService offlineSettlemen)
+        public TransactionController(ITransactionService transactionService, AppDbContext context,
+                                     IHttpContextAccessor httpContextAccessor,
+                                    IOfflineSettlementService offlineSettlemen)
         {
             _transactionService = transactionService;
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
             _offlineSettlemen = offlineSettlemen;
         }
         /// <summary>
@@ -156,9 +162,12 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("accountlookup")]
-        public async Task<IActionResult> AccountLookup([FromBody] accountLookupRequest model, [FromHeader] string userUid)
+        [ServiceFilter(typeof(UserSessionValidator))]
+        public async Task<IActionResult> AccountLookup([FromBody] accountLookupRequest model)
         {
-            var response = await _transactionService.AccountLookup(model, userUid);
+            string userUId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("UserUid");
+
+            var response = await _transactionService.AccountLookup(model, userUId);
             if (response.IsSuccessful == true)
             {
                 return Ok(response);

@@ -1076,7 +1076,12 @@ namespace AscomPayPG.Services.Gateways
             return respObj;
         }
 
-        public async Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model, bool isInternal = false, bool isAccountToAccount = false, string transactionRef = "")
+        public async Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model,
+                                                           string lookUpNumber,
+                                                           string lookUpName,
+                                                           bool isInternal = false, 
+                                                           bool isAccountToAccount = false, 
+                                                           string transactionRef = "")
         {
 
             string transactionType = isInternal ? TransactionTypes.TransferToAscomUsers.ToString() : TransactionTypes.TransferToOthersBanks.ToString();
@@ -1124,9 +1129,9 @@ namespace AscomPayPG.Services.Gateways
 
             var transactionReference =  string.IsNullOrEmpty(transactionRef) ? Guid.NewGuid().ToString().Substring(0, 20).Replace("-", "").ToUpper() : transactionRef;
             var regResponse = await _clientRequestRepo.RegisterTransaction(decimal.Parse(model.Amount), paymentProviderCharges, marchantCharge,
-                                                                                  model.RecieverName, sender, transactionReference, decimal.Parse(model.Amount) + charges,
+                                                                                  lookUpName, sender, transactionReference, decimal.Parse(model.Amount) + charges,
                                                                                   model.Description, transactionType, vat, charges, PaymentProvider.NinePSB.ToString(),
-                                                                                  model.senderAccountNumber, model.RecieverNumber, "", "");
+                                                                                  model.senderAccountNumber, lookUpNumber, "", "");
             if (!regResponse)
             {
                 return new PlainResponse
@@ -1151,8 +1156,8 @@ namespace AscomPayPG.Services.Gateways
                 {
                     bank = isInternal ? "120001" : model.bank,
                     senderaccountnumber = model.senderAccountNumber,
-                    number = model.RecieverNumber,
-                    name = model.RecieverName,
+                    number = lookUpNumber,
+                    name =   lookUpName,
                     sendername = externalUsers != null ? externalUsers.name : "N/A",
                 };
                 payload.order.country = "NGN";
@@ -1227,10 +1232,10 @@ namespace AscomPayPG.Services.Gateways
                                 if (isInternal)
                                 {
 
-                                    var receiverAccount = await _clientRequestRepo.GetAccount(model.RecieverNumber);
+                                    var receiverAccount = await _clientRequestRepo.GetAccount(lookUpNumber);
                                     var receiver = await _clientRequestRepo.GetUser(receiverAccount.UserUid.ToString());
 
-                                    PlainResponse receiverWallet = await WalletEnquiry(new WalletRequest { accountNo = model.RecieverNumber });
+                                    PlainResponse receiverWallet = await WalletEnquiry(new WalletRequest { accountNo = lookUpNumber });
                                     if (receiverWallet != null)
                                     {
                                         _transactionHelper.NotifyForCredit($"{receiver.FirstName} {receiver.LastName}", receiver.Email,
@@ -1397,30 +1402,86 @@ namespace AscomPayPG.Services.Gateways
 
 
 
-                using (var response = await httpClient.PostAsync(fullUrl, content))
+                try
                 {
-
-                    externalIntegrationLog.Response = await response.Content.ReadAsStringAsync();
-                    externalIntegrationLog.ResponseTime = DateTime.Now;
-                    _context.ExternalIntegrationLogs.Add(externalIntegrationLog);
-                    _context.SaveChanges();
-
-                    if (response.IsSuccessStatusCode)
+                    using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
-                        string apiResponse = await response.Content.ReadAsStringAsync();
 
-                        responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                        if (responseObj?.code == "00")
+                        externalIntegrationLog.Response = await response.Content.ReadAsStringAsync();
+                        externalIntegrationLog.ResponseTime = DateTime.Now;
+                        _context.ExternalIntegrationLogs.Add(externalIntegrationLog);
+                        _context.SaveChanges();
+
+                        if (response.IsSuccessStatusCode)
                         {
-                            accountLookUpResponse.IsSuccessful = true;
-                            accountLookUpResponse.ResponseCode = StatusCodes.Status200OK;
-                            accountLookUpResponse.Message = responseObj.message;
-                            accountLookUpResponse.Data.account_number = responseObj.customer.account.number;
-                            accountLookUpResponse.Data.account_name = responseObj.customer.account.name;
-                            return accountLookUpResponse;
+                            string apiResponse = await response.Content.ReadAsStringAsync();
+
+                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                            if (responseObj?.code == "00")
+                            {
+                                accountLookUpResponse.IsSuccessful = true;
+                                accountLookUpResponse.ResponseCode = StatusCodes.Status200OK;
+                                accountLookUpResponse.Message = responseObj.message;
+                                accountLookUpResponse.Data.account_number = responseObj.customer.account.number;
+                                accountLookUpResponse.Data.account_name = responseObj.customer.account.name;
+
+                                // save response 
+                                var lookUp = new AccountLookUpLog
+                                {
+                                    AccountName = responseObj.customer.account.name,
+                                    AccountNumber = responseObj.customer.account.number,
+                                    UsageStatus = (int)AccountLookUpUsageStatus.Init,
+                                    LookUpBank = accountLookupRequest.bank_code,
+                                    LookStatus = true,
+                                    InitaitorId = userId,
+                                    LookUpId = Guid.NewGuid().ToString().Substring(0, 18).Replace("-", ""),
+                                };
+                                _context.AccountLookUpLog.Add(lookUp);
+                                _context.SaveChanges();
+                                accountLookUpResponse.LRId = lookUp.LookUpId;
+                                return accountLookUpResponse;
+                            }
+                            else
+                            {
+
+                                // save response 
+                                var lookUp = new AccountLookUpLog
+                                {
+                                    AccountName =string.Empty,
+                                    AccountNumber = accountLookupRequest.account_number,
+                                    UsageStatus = (int)AccountLookUpUsageStatus.failed,
+                                    LookUpBank = accountLookupRequest.bank_code,
+                                    InitaitorId = userId,
+                                    LookUpId = string.Empty,
+                                };
+                                _context.AccountLookUpLog.Add(lookUp);
+                                _context.SaveChanges();
+                                accountLookUpResponse.LRId = lookUp.LookUpId;
+
+                                accountLookUpResponse.IsSuccessful = false;
+                                accountLookUpResponse.Data = null;
+                                accountLookUpResponse.ResponseCode = StatusCodes.Status400BadRequest;
+                                accountLookUpResponse.Message = responseObj.message;
+                                return accountLookUpResponse;
+                            }
                         }
                         else
                         {
+
+                            // save response 
+                            var lookUp = new AccountLookUpLog
+                            {
+                                AccountName = string.Empty,
+                                AccountNumber = accountLookupRequest.account_number,
+                                UsageStatus = (int)AccountLookUpUsageStatus.failed,
+                                LookUpBank = accountLookupRequest.bank_code,
+                                InitaitorId = userId,
+                                LookUpId = Guid.NewGuid().ToString().Substring(0, 18).Replace("-", ""),
+                            };
+                            _context.AccountLookUpLog.Add(lookUp);
+                            _context.SaveChanges();
+                            accountLookUpResponse.LRId = lookUp.LookUpId;
+
                             accountLookUpResponse.IsSuccessful = false;
                             accountLookUpResponse.Data = null;
                             accountLookUpResponse.ResponseCode = StatusCodes.Status400BadRequest;
@@ -1428,14 +1489,11 @@ namespace AscomPayPG.Services.Gateways
                             return accountLookUpResponse;
                         }
                     }
-                    else
-                    {
-                        accountLookUpResponse.IsSuccessful = false;
-                        accountLookUpResponse.Data = null;
-                        accountLookUpResponse.ResponseCode = StatusCodes.Status400BadRequest;
-                        accountLookUpResponse.Message = responseObj.message;
-                        return accountLookUpResponse;
-                    }
+                }
+                catch (Exception ex)
+                {
+
+                    throw;
                 }
             }
         }

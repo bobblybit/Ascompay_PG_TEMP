@@ -1,4 +1,5 @@
 using System.Text;
+using Ascom_Pay_Middleware.Filters;
 using AscomPayPG.Data;
 using AscomPayPG.Data.Repository.Implementation;
 using AscomPayPG.Data.Repository.Interface;
@@ -12,12 +13,12 @@ using AscomPayPG.Services.Gateways.Interface;
 using AscomPayPG.Services.Implementation;
 using AscomPayPG.Services.Interface;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Swashbuckle.AspNetCore.Filters;
-using transacrtionSettlement;
 
 try
 {
@@ -43,21 +44,23 @@ try
 
     var connection = await encode.decrypt(builder.Configuration.GetConnectionString("AppConnectionString"),1, Token);
     if(connection.isOk == false) throw new Exception($"Connection Failed : {connection.Message}");
-//    var connection = builder.Configuration.GetConnectionString("AppConnectionString");
 
-   /* builder.Services.AddDbContextPool<AppDbContext>(options =>
-            options.UseSqlServer(connection.ToString(),
-            opts => opts.CommandTimeout(timeout)
-     ), (int)ServiceLifetime.Scoped);*/
 
-    /*var connectionLog = await encode.decrypt(builder.Configuration.GetConnectionString("AppLogConnectionString"), 0, Token);
-
-    if (connection.isOk == false) throw new Exception($"Connection Failed : {connection.Message}");*/
-
-    builder.Services.AddDbContextPool<AppLogDBContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString(connection.Message),
+    builder.Services.AddDbContextPool<AppDbContext>(options =>
+            options.UseSqlServer(connection.Message,
             opts => opts.CommandTimeout(timeout)
      ), (int)ServiceLifetime.Scoped);
+
+
+    var connectionLog = await encode.decrypt(builder.Configuration.GetConnectionString("AppLogConnectionString"), 1, Token);
+
+    if (connection.isOk == false) throw new Exception($"Connection Failed : {connection.Message}");
+
+    builder.Services.AddDbContextPool<AppLogDBContext>(options =>
+             options.UseSqlServer(connectionLog.Message,
+             opts => opts.CommandTimeout(timeout)
+      ), (int)ServiceLifetime.Scoped);
+
 
     builder.Services.AddHttpContextAccessor();
 
@@ -93,6 +96,7 @@ try
     builder.Services.AddScoped<InternalTransactionValidator>(); // Or AddTransient based on your need
     builder.Services.AddScoped<ExternalTransactionValidator>(); // Or AddTransient based on your need
     builder.Services.AddScoped<VasTransactionValidator>(); // Or AddTransient based on your need
+    builder.Services.AddScoped<UserSessionValidator>(); // Or AddTransient based on your need
 
 
 
@@ -159,11 +163,17 @@ try
         };
     });
 
-
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache
+    builder.Services.AddSession(options =>
+    {
+        options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
+        options.Cookie.HttpOnly = true; // Make the session cookie HTTP-only
+        options.Cookie.IsEssential = true; // Make the session cookie essential
+    });
 
     builder.Services.AddAuthorization();
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddHttpContextAccessor();
     builder.Services.AddRazorPages();
     builder.Services.AddMvcCore();
 
@@ -178,6 +188,10 @@ try
             //builder.SetIsOriginAllowed(origin => true);
         });
     });
+
+    builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(@"./keys"))
+    .SetApplicationName("AscomPay");
 
     var app = builder.Build();
 
@@ -206,14 +220,11 @@ try
 
 
     app.UseStaticFiles();
-
-    app.UseHttpsRedirection();
-
-    app.UseAuthentication();
-
     app.UseRouting();
+    app.UseSession();
+    app.UseHttpsRedirection();
+    app.UseAuthentication();
     app.UseCors();
-
     app.UseAuthorization();
     app.UseSession();
 

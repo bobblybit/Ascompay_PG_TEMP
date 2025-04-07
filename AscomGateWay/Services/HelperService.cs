@@ -8,6 +8,9 @@ using RestSharp;
 using AscomPayPG.Data;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Helpers.HTTPHelper;
+using System;
+using Microsoft.EntityFrameworkCore;
+using AscomPayPG.Data.Enum;
 
 namespace AscomPayPG.Services
 {
@@ -290,7 +293,10 @@ namespace AscomPayPG.Services
             }
             catch (Exception ex) { Console.WriteLine(ex); return null; }
         }
-
+        public  Task<User> GetUserBySessionAsync(string session)
+        {
+            return _context.Users.FirstOrDefaultAsync(x => x.CurrentSession == session);
+        }
         public async Task<bool> ValidateTransaction(string accessToken, string senderAccount, string receiverAccount, decimal amount, string transactionType)
         {
             string url = _configuration["App:TransactionAuthentication"];
@@ -315,6 +321,17 @@ namespace AscomPayPG.Services
             if (responseObj.Data.IsOk)
                 return true;
             return false;
+        }
+
+        public Task<AccountLookUpLog> GetLookUpLog(string userId, string lookUpId)
+        {
+            return   _context.AccountLookUpLog
+                                     .OrderByDescending(x => x.DateCreated)
+                                     .FirstOrDefaultAsync(x => x.InitaitorId == userId
+                                                      && lookUpId == x.LookUpId
+                                                      && x.LookStatus == true
+                                                      && x.UsageStatus == (int)AccountLookUpUsageStatus.Init
+                                                      );
         }
     }
 }

@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.Text;
 
-namespace AscomPayPG.Helpers
+namespace Common.Extensions
 {
     public static class SessionExtension
     {
