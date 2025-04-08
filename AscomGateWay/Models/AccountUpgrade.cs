@@ -1,8 +1,8 @@
 ﻿using AscomPayPG.Models.Shared;
 
-namespace DB_MODALS.Entities
+namespace AscomPayPG.Models
 {
-    public class AccountUpgrade:BaseEntity
+    public class AccountUpgrade : BaseEntity
     {
         public string UserId { get; set; }
         public string? AccountNumber { get; set; }

@@ -1077,6 +1077,7 @@ namespace AscomPayPG.Services.Gateways
         }
 
         public async Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model,
+                                                          string sendAccountName,
                                                            string lookUpNumber,
                                                            string lookUpName,
                                                            bool isInternal = false, 

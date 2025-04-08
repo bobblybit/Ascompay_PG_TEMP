@@ -5,7 +5,7 @@ using AscomPayPG.OfflineSecurity.Service.Interfaces;
 using AscomPayPG.Services.Interface;
 using Microsoft.Data.SqlClient;
 
-namespace TransactionSettlement
+namespace AscomPayPG.OfflineSecurity.Service.Implementation
 {
     public class TransactionProcessor
     {
@@ -112,7 +112,7 @@ namespace TransactionSettlement
                 ProcessedTransactions = results,
                 ResponseMessages = processingErrors.Any() ? processingErrors : null
             };
-        }     
+        }
 
         // Method to process each transaction individually
         private async Task<bool> ProcessTransaction(OfflineTransactionSec transaction)
@@ -196,7 +196,7 @@ namespace TransactionSettlement
             return true;
         }
 
-       
+
         public string GenerateAndSaveNonce(Guid userUid, string mobileAppPublicId)
         {
             // Step 1: Generate the nonce
@@ -238,5 +238,5 @@ namespace TransactionSettlement
         }
     }
 
-    
+
 }

@@ -1,10 +1,10 @@
-﻿using Ascom_Pay_Middleware.Filters;
-using AscomPayPG.Data;
+﻿using AscomPayPG.Data;
+using AscomPayPG.Filters;
+using AscomPayPG.Helpers;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.GTPay;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Interface;
-using Common.Extensions;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -31,6 +31,7 @@ namespace AscomPayPG.Controllers
             _httpContextAccessor = httpContextAccessor;
             _offlineSettlemen = offlineSettlemen;
         }
+
         /// <summary>
         ///   This endpoint gets all the accounts attached to a user
         /// </summary>

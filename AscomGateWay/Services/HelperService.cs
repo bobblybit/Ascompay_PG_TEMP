@@ -333,5 +333,10 @@ namespace AscomPayPG.Services
                                                       && x.UsageStatus == (int)AccountLookUpUsageStatus.Init
                                                       );
         }
+
+        public Task<UserSession> GetUserCurrentSessionAsync(string sessionToken, string refreshToken)
+        {
+            return _context.UserSession.FirstOrDefaultAsync(x => x.Token == sessionToken && x.RereshToken == refreshToken && x.IsActive == true);
+        }
     }
 }

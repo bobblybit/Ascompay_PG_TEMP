@@ -4,7 +4,6 @@ using AscomPayPG.Models;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Interface;
-using DB_MODALS.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AscomPayPG.Services.Implementation

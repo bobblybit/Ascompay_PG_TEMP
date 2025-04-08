@@ -1,12 +1,12 @@
 ﻿using AscomPayPG.Data;
 using AscomPayPG.Data.Enum;
+using AscomPayPG.Helpers;
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Gateways;
 using AscomPayPG.Services.Interface;
-using Common.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace AscomPayPG.Services.Implementation
@@ -280,7 +280,7 @@ namespace AscomPayPG.Services.Implementation
                     };
                 }
 
-                response = await waas.TransferOtherBank(model, lookUpRecord.AccountNumber, lookUpRecord.AccountName, false, true, transactionReference);
+                response = await waas.TransferOtherBank(model, sourceAccount.AccountName, lookUpRecord.AccountNumber, lookUpRecord.AccountName, false, true, transactionReference);
 
                 if (!response.IsSuccessful)
                 {

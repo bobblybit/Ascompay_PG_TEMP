@@ -1,6 +1,7 @@
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
+using System;
 
 namespace AscomPayPG.Services
 {
@@ -20,5 +21,7 @@ namespace AscomPayPG.Services
         Task<User> GetUserBySessionAsync(string session);
         Task<AccountLookUpLog> GetLookUpLog(string userId, string lookUpId);
         public Task<bool> ValidateTransaction(string accessToken, string senderAccount, string receiverAccount, decimal amount, string transactionType);
+        public Task<UserSession> GetUserCurrentSessionAsync(string sessionToken, string refreshToken);
+        
     }
 }

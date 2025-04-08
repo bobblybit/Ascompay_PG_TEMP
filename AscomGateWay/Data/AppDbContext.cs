@@ -1,6 +1,5 @@
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
-using DB_MODALS.Entities;
 using Microsoft.EntityFrameworkCore;
 namespace AscomPayPG.Data
 {
@@ -60,5 +59,6 @@ namespace AscomPayPG.Data
         public DbSet<AccountTeir> AccountTiers { get; set; }
         public DbSet<TransactionJournal> TransactionJournal { get; set; }
         public DbSet<TransactionRetry> TransactionRetries { get; set; }
+        public DbSet<UserSession> UserSession { get; set; }
     }
 }

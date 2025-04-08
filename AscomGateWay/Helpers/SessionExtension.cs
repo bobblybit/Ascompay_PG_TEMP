@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Text;
 
-namespace Common.Extensions
+namespace AscomPayPG.Helpers
 {
     public static class SessionExtension
     {

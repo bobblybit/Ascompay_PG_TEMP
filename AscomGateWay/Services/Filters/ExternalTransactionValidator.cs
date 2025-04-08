@@ -5,7 +5,7 @@ using System.Text;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Data.Enum;
 using AscomPayPG.Models.DTO;
-using Common.Extensions;
+using AscomPayPG.Helpers;
 
 namespace AscomPayPG.Services.Filters
 {
@@ -21,7 +21,6 @@ namespace AscomPayPG.Services.Filters
         {
             var request = context.HttpContext.Request;
             var transactionToken = context.HttpContext.Request.Headers["token"];
-
             var lookUp = context.HttpContext.Request.Headers["lookup"];
 
 

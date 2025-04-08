@@ -8,7 +8,6 @@ using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Gateways;
 using AscomPayPG.Services.Interface;
-using Common.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Text.Json;
@@ -1069,10 +1068,9 @@ namespace AscomPayPG.Services.Implementation
                                                Narration = requestModel.Decription,
                                                UserId = sender.UserUid.ToString(),
                                                senderAccountNumber = senderAccount.AccountNumber,
-                                               senderName = senderAccount.AccountName,
                                            };
 
-                                            response = await waas.TransferOtherBank(TransferRequest9BSB, lookUpRecord.AccountNumber, lookUpRecord.AccountName, true, false, transactionReference);
+                                            response = await waas.TransferOtherBank(TransferRequest9BSB, senderAccount.AccountName, lookUpRecord.AccountNumber, lookUpRecord.AccountName, true, false, transactionReference);
 
                                             if (!response.IsSuccessful)
                                             {
@@ -1206,10 +1204,9 @@ namespace AscomPayPG.Services.Implementation
                                        Narration = requestModel.Decription,
                                        UserId = sourceAccount.UserUid.ToString(),
                                        senderAccountNumber = sourceAccount.AccountNumber,
-                                       senderName = sourceAccount.AccountName
                                    };
 
-                                   response = await waas.TransferOtherBank(TransferRequest9BSB, lookUpRecord.AccountNumber, lookUpRecord.AccountName, true, true, transactionReference);
+                                   response = await waas.TransferOtherBank(TransferRequest9BSB, sourceAccount.AccountName, lookUpRecord.AccountNumber, lookUpRecord.AccountName, true, true, transactionReference);
 
                                    if (!response.IsSuccessful)
                                    {
@@ -1314,11 +1311,10 @@ namespace AscomPayPG.Services.Implementation
                                        Description = requestModel.Decription,
                                        Narration = requestModel.Decription,
                                        UserId = sender.UserUid.ToString(),
-                                       senderAccountNumber = senderAccount.AccountNumber,
-                                       senderName = senderAccount.AccountName
+                                       senderAccountNumber = senderAccount.AccountNumber
                                    };
 
-                                   response = await waas.TransferOtherBank(TransferRequest9BSB, lookUpRecord.AccountNumber, lookUpRecord.AccountName, true, false, transactionReference);
+                                   response = await waas.TransferOtherBank(TransferRequest9BSB, senderAccount.AccountName, lookUpRecord.AccountNumber, lookUpRecord.AccountName, true, false, transactionReference);
 
                                    if (!response.IsSuccessful)
                                    {

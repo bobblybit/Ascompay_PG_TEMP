@@ -1,173 +1,172 @@
-﻿using AscomPayPG.Helpers;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Common
+namespace AscomPayPG.Helpers
 {
     public static class SecurityHelper
     {
         private static readonly string encrypKey = "b14ca5898a4e4133bbce2ea2315a1917";
         private static readonly IConfiguration configuration = ConfigurationHelper.GetConfigurationInstance();
 
-/*        public static ApiResponseMessage EncryptString(EntDecrpt key)
-        {
-
-            ApiResponseMessage Apiresult = new ApiResponseMessage();
-
-            try
-            {
-
-                byte[] iv = new byte[16];
-                byte[] array;
-                string Skey = string.Empty;
-
-                using (Aes aes = Aes.Create())
+        /*        public static ApiResponseMessage EncryptString(EntDecrpt key)
                 {
-                    if (key.Type == 0)
-                    {
-                        Skey = GetEncryptionKey();
-                    }
-                    else if (key.Type == 6789)
-                    {
-                        Skey = Convert.ToString(key.Token);
-                    }
-                    else
-                    {
-                        var Item = GetAdditionalSecurityKey(key.Type);
 
+                    ApiResponseMessage Apiresult = new ApiResponseMessage();
 
-                        Skey = Item.Item1;
+                    try
+                    {
 
-                        if (key.Token != Item.Item2)
+                        byte[] iv = new byte[16];
+                        byte[] array;
+                        string Skey = string.Empty;
+
+                        using (Aes aes = Aes.Create())
                         {
-                            Apiresult = new ApiResponseMessage()
+                            if (key.Type == 0)
                             {
-                                Message = "Invalid Token",
-                                ResponseCode = 400,
-                                isOk = false
-                            };
-                        }
-                    }
-
-                    aes.Key = Encoding.UTF8.GetBytes(Skey);
-                    aes.IV = iv;
-
-                    ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
-
-                    using (MemoryStream memoryStream = new MemoryStream())
-                    {
-                        using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, encryptor, CryptoStreamMode.Write))
-                        {
-                            using (StreamWriter streamWriter = new StreamWriter((Stream)cryptoStream))
-                            {
-                                streamWriter.Write(key.Data);
+                                Skey = GetEncryptionKey();
                             }
-
-                            array = memoryStream.ToArray();
-                        }
-                    }
-                }
-
-
-                Apiresult = new ApiResponseMessage()
-                {
-                    Message = Convert.ToBase64String(array),
-                    ResponseCode = 200,
-                    isOk = true
-                };
-
-
-            }
-            catch (Exception ex)
-            {
-                Apiresult = new ApiResponseMessage()
-                {
-                    Message = ex.Message,
-                    ResponseCode = 500,
-                    isOk = false
-                };
-            }
-
-            return Apiresult;
-        }
-*/
-   /*     public static ApiResponseMessage DecryptString(EntDecrpt key)
-        {
-            ApiResponseMessage Apiresult = new ApiResponseMessage();
-
-            try
-            {
-
-                byte[] iv = new byte[16];
-                byte[] buffer = Convert.FromBase64String(key.Data);
-                string Skey = string.Empty;
-
-                using (Aes aes = Aes.Create())
-                {
-                    if (key.Type == 0)
-                    {
-                        Skey = GetEncryptionKey();
-                    }
-                    else if (key.Type == 6789)
-                    {
-                        Skey = Convert.ToString(key.Token);
-                    }
-                    else
-                    {
-                        var Item = GetAdditionalSecurityKey(key.Type);
-
-
-                        Skey = Item.Item1;
-
-                        if (key.Token != Item.Item2)
-                        {
-                            Apiresult = new ApiResponseMessage()
+                            else if (key.Type == 6789)
                             {
-                                Message = "Invalid Token",
-                                ResponseCode = 400,
-                                isOk = false
-                            };
-                        }
-                    }
-
-                    aes.Key = Encoding.UTF8.GetBytes(Skey);
-                    aes.IV = iv;
-                    ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-
-                    using (MemoryStream memoryStream = new MemoryStream(buffer))
-                    {
-                        using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, decryptor, CryptoStreamMode.Read))
-                        {
-                            using (StreamReader streamReader = new StreamReader((Stream)cryptoStream))
+                                Skey = Convert.ToString(key.Token);
+                            }
+                            else
                             {
-                                Apiresult = new ApiResponseMessage()
+                                var Item = GetAdditionalSecurityKey(key.Type);
+
+
+                                Skey = Item.Item1;
+
+                                if (key.Token != Item.Item2)
                                 {
-                                    Message = streamReader.ReadToEnd(),
-                                    ResponseCode = 200,
-                                    isOk = true
-                                };
+                                    Apiresult = new ApiResponseMessage()
+                                    {
+                                        Message = "Invalid Token",
+                                        ResponseCode = 400,
+                                        isOk = false
+                                    };
+                                }
+                            }
+
+                            aes.Key = Encoding.UTF8.GetBytes(Skey);
+                            aes.IV = iv;
+
+                            ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+
+                            using (MemoryStream memoryStream = new MemoryStream())
+                            {
+                                using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, encryptor, CryptoStreamMode.Write))
+                                {
+                                    using (StreamWriter streamWriter = new StreamWriter((Stream)cryptoStream))
+                                    {
+                                        streamWriter.Write(key.Data);
+                                    }
+
+                                    array = memoryStream.ToArray();
+                                }
                             }
                         }
+
+
+                        Apiresult = new ApiResponseMessage()
+                        {
+                            Message = Convert.ToBase64String(array),
+                            ResponseCode = 200,
+                            isOk = true
+                        };
+
+
                     }
+                    catch (Exception ex)
+                    {
+                        Apiresult = new ApiResponseMessage()
+                        {
+                            Message = ex.Message,
+                            ResponseCode = 500,
+                            isOk = false
+                        };
+                    }
+
+                    return Apiresult;
                 }
+        */
+        /*     public static ApiResponseMessage DecryptString(EntDecrpt key)
+             {
+                 ApiResponseMessage Apiresult = new ApiResponseMessage();
 
-            }
-            catch (Exception ex)
-            {
-                Apiresult = new ApiResponseMessage()
-                {
-                    Message = ex.Message,
-                    ResponseCode = 500,
-                    isOk = false
-                };
-            }
+                 try
+                 {
 
-            return Apiresult;
-        }*/
+                     byte[] iv = new byte[16];
+                     byte[] buffer = Convert.FromBase64String(key.Data);
+                     string Skey = string.Empty;
+
+                     using (Aes aes = Aes.Create())
+                     {
+                         if (key.Type == 0)
+                         {
+                             Skey = GetEncryptionKey();
+                         }
+                         else if (key.Type == 6789)
+                         {
+                             Skey = Convert.ToString(key.Token);
+                         }
+                         else
+                         {
+                             var Item = GetAdditionalSecurityKey(key.Type);
+
+
+                             Skey = Item.Item1;
+
+                             if (key.Token != Item.Item2)
+                             {
+                                 Apiresult = new ApiResponseMessage()
+                                 {
+                                     Message = "Invalid Token",
+                                     ResponseCode = 400,
+                                     isOk = false
+                                 };
+                             }
+                         }
+
+                         aes.Key = Encoding.UTF8.GetBytes(Skey);
+                         aes.IV = iv;
+                         ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+
+                         using (MemoryStream memoryStream = new MemoryStream(buffer))
+                         {
+                             using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, decryptor, CryptoStreamMode.Read))
+                             {
+                                 using (StreamReader streamReader = new StreamReader((Stream)cryptoStream))
+                                 {
+                                     Apiresult = new ApiResponseMessage()
+                                     {
+                                         Message = streamReader.ReadToEnd(),
+                                         ResponseCode = 200,
+                                         isOk = true
+                                     };
+                                 }
+                             }
+                         }
+                     }
+
+                 }
+                 catch (Exception ex)
+                 {
+                     Apiresult = new ApiResponseMessage()
+                     {
+                         Message = ex.Message,
+                         ResponseCode = 500,
+                         isOk = false
+                     };
+                 }
+
+                 return Apiresult;
+             }*/
 
         public static string GetEncryptionKey()
         {
@@ -242,9 +241,9 @@ namespace Common
 
                     using (MemoryStream memoryStream = new MemoryStream(buffer))
                     {
-                        using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, decryptor, CryptoStreamMode.Read))
+                        using (CryptoStream cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
                         {
-                            using (StreamReader streamReader = new StreamReader((Stream)cryptoStream))
+                            using (StreamReader streamReader = new StreamReader(cryptoStream))
                             {
                                 return streamReader.ReadToEnd();
                             }
@@ -261,9 +260,9 @@ namespace Common
 
         #region ENCRYPTION/DECRYPTION METHODS OVERLOAD
 
-       public static string Decrypt(byte[] cipheredtext, byte[] key, byte[] iv)
+        public static string Decrypt(byte[] cipheredtext, byte[] key, byte[] iv)
         {
-            string simpletext = String.Empty;
+            string simpletext = string.Empty;
             using (Aes aes = Aes.Create())
             {
                 ICryptoTransform decryptor = aes.CreateDecryptor(key, iv);

@@ -1,9 +1,9 @@
-﻿using AscomPayPG.Services;
-using Common.Extensions;
+﻿using AscomPayPG.Helpers;
+using AscomPayPG.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace Ascom_Pay_Middleware.Filters
+namespace AscomPayPG.Filters
 {
     public class UserSessionValidator : IAuthorizationFilter
     {
@@ -26,20 +26,34 @@ namespace Ascom_Pay_Middleware.Filters
                 return;
             }
 
+            var refreshToken = request.Headers["Token"].FirstOrDefault();
+
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                context.Result = new UnauthorizedResult();
+                return;
+            }
+
             var token = authHeader.Substring("Bearer ".Length).Trim();
 
             // Look up the user based on the token
-            var user = _helperService.GetUserBySessionAsync(token).GetAwaiter().GetResult(); 
+            var userCurrentSession = _helperService.GetUserCurrentSessionAsync(token, refreshToken).GetAwaiter().GetResult();
 
-            if (user == null)
+            if (userCurrentSession == null)
+            {
+                context.Result = new UnauthorizedResult();
+                return;
+            }
+
+            if (userCurrentSession.TokenExpiry < DateTime.UtcNow)
             {
                 context.Result = new UnauthorizedResult();
                 return;
             }
 
             var session = context.HttpContext.Session;
-            session.SetObjectAsJson("Email", user.Email);
-            session.SetObjectAsJson("UserUid", user.UserUid);
+            session.SetObjectAsJson("Email", userCurrentSession.Email);
+            session.SetObjectAsJson("UserUid", userCurrentSession.UserId);
         }
     }
 }
