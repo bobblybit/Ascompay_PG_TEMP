@@ -239,10 +239,11 @@ namespace AscomPayPG.Services.Implementation
         public async Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model)
         {
 
-            string lookUpId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("lookUp");
+            var userId =  _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("UserUid");
+            var lookUpId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("LookUpId");
             var lookUpRecord = _context.AccountLookUpLog
                                        .OrderByDescending(x => x.DateCreated)
-                                       .FirstOrDefault(x => x.InitaitorId == model.UserId 
+                                       .FirstOrDefault(x => x.InitaitorId == userId 
                                                         && lookUpId == x.LookUpId 
                                                         && x.LookStatus == true 
                                                         && x.UsageStatus == (int)AccountLookUpUsageStatus.Init
@@ -280,7 +281,7 @@ namespace AscomPayPG.Services.Implementation
                     };
                 }
 
-                response = await waas.TransferOtherBank(model, sourceAccount.AccountName, lookUpRecord.AccountNumber, lookUpRecord.AccountName, false, true, transactionReference);
+                response = await waas.TransferOtherBank(model, sourceAccount.UserUid.ToString(), sourceAccount.AccountName, lookUpRecord.AccountNumber, lookUpRecord.AccountName, false, true, transactionReference);
 
                 if (!response.IsSuccessful)
                 {

@@ -45,12 +45,10 @@ try
     var connection = await encode.decrypt(builder.Configuration.GetConnectionString("AppConnectionString"),1, Token);
     if(connection.isOk == false) throw new Exception($"Connection Failed : {connection.Message}");
 
-
     builder.Services.AddDbContextPool<AppDbContext>(options =>
             options.UseSqlServer(connection.Message,
             opts => opts.CommandTimeout(timeout)
      ), (int)ServiceLifetime.Scoped);
-
 
     var connectionLog = await encode.decrypt(builder.Configuration.GetConnectionString("AppLogConnectionString"), 1, Token);
 
@@ -97,8 +95,6 @@ try
     builder.Services.AddScoped<ExternalTransactionValidator>(); // Or AddTransient based on your need
     builder.Services.AddScoped<VasTransactionValidator>(); // Or AddTransient based on your need
     builder.Services.AddScoped<UserSessionValidator>(); // Or AddTransient based on your need
-
-
 
     // Add services to the container.
     builder.Services.AddControllersWithViews();

@@ -1,4 +1,5 @@
 ﻿using AscomPayPG.Data;
+using AscomPayPG.Filters;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Filters;
@@ -357,6 +358,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("transfer-other-bank-9psb")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         [ServiceFilter(typeof(ExternalTransactionValidator))]
         public async Task<IActionResult> TransferOtherBanks([FromBody] OtherBankTransferDTO model)
         {

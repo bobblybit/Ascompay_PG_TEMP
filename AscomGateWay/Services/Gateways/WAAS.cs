@@ -1077,6 +1077,7 @@ namespace AscomPayPG.Services.Gateways
         }
 
         public async Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model,
+                                                          string userId,
                                                           string sendAccountName,
                                                            string lookUpNumber,
                                                            string lookUpName,
@@ -1091,7 +1092,7 @@ namespace AscomPayPG.Services.Gateways
             PlainResponse respAccessToken = new PlainResponse();
             string bvn = string.Empty;
             var sourceAccount = await _context.Accounts.Include(x => x.AccountTeir).FirstOrDefaultAsync(x => x.AccountNumber == model.senderAccountNumber);
-            var sender = _context.Users.FirstOrDefault(x => x.UserUid.ToString() == model.UserId);
+            var sender = _context.Users.FirstOrDefault(x => x.UserUid.ToString() == userId);
             var paymentProviderCharges = await GetPaymentProviderCharges(transactionType);
             var marchantCharge = await CalculateCharges(decimal.Parse(model.Amount), transactionType);
             var charges = paymentProviderCharges + marchantCharge;
@@ -1191,7 +1192,7 @@ namespace AscomPayPG.Services.Gateways
 
                     ExternalIntegrationLog externalIntegrationLog = new ExternalIntegrationLog
                     {
-                        CreatedBy = model.UserId,
+                        CreatedBy = userId,
                         DateCreated = DateTime.Now,
                         RequestTime = DateTime.Now,
                         RequestPayload = payloadLoadAsJsonString,

@@ -11,6 +11,7 @@ using AscomPayPG.Helpers.HTTPHelper;
 using System;
 using Microsoft.EntityFrameworkCore;
 using AscomPayPG.Data.Enum;
+using AscomPayPG.Helpers;
 
 namespace AscomPayPG.Services
 {
@@ -323,9 +324,13 @@ namespace AscomPayPG.Services
             return false;
         }
 
-        public Task<AccountLookUpLog> GetLookUpLog(string userId, string lookUpId)
+        public Task<AccountLookUpLog> GetLookUpLog(string lookUpId)
         {
-            return   _context.AccountLookUpLog
+
+            string userId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("UserUid");
+
+
+            return _context.AccountLookUpLog
                                      .OrderByDescending(x => x.DateCreated)
                                      .FirstOrDefaultAsync(x => x.InitaitorId == userId
                                                       && lookUpId == x.LookUpId

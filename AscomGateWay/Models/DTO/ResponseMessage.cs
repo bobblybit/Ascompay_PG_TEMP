@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Web;
-
-namespace AscomPayPG.Models.DTO
+﻿namespace AscomPayPG.Models.DTO
 {
     public class ResponseMessage
     {

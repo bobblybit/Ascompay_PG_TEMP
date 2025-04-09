@@ -19,7 +19,7 @@ namespace AscomPayPG.Services
         public string Base64Decode(string base64EncodedData);
         public TransactionType GetOneTransactionType(int itemId);
         Task<User> GetUserBySessionAsync(string session);
-        Task<AccountLookUpLog> GetLookUpLog(string userId, string lookUpId);
+        Task<AccountLookUpLog> GetLookUpLog(string lookUpId);
         public Task<bool> ValidateTransaction(string accessToken, string senderAccount, string receiverAccount, decimal amount, string transactionType);
         public Task<UserSession> GetUserCurrentSessionAsync(string sessionToken, string refreshToken);
         

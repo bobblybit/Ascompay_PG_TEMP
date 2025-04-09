@@ -20,22 +20,22 @@ namespace AscomPayPG.Services.Filters
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             var request = context.HttpContext.Request;
-            var transactionToken = context.HttpContext.Request.Headers["token"];
-            var lookUp = context.HttpContext.Request.Headers["lookup"];
 
+            string lookUpUId = "";
 
+            var transactionToken = context.HttpContext.Request.Headers["Xtoken"];
             if (string.IsNullOrEmpty(transactionToken) || string.IsNullOrWhiteSpace(transactionToken))
             {
                 context.Result = new UnauthorizedObjectResult("Token is required"); ;
                 return;
             }
-
+            
+            var lookUp = context.HttpContext.Request.Headers["Lookup"];
             if (string.IsNullOrEmpty(lookUp) || string.IsNullOrWhiteSpace(lookUp))
             {
-                context.Result = new UnauthorizedObjectResult("lookUp is required"); ;
+                context.Result = new UnauthorizedObjectResult("lookUp is required");
                 return;
             }
-
 
             if (request.ContentLength > 0 && request.Body.CanRead)
             {
@@ -54,14 +54,14 @@ namespace AscomPayPG.Services.Filters
                             });
 
 
-                            var lookUpLog = _helperService.GetLookUpLog(requestModel.UserId, lookUp).Result;
+                            var lookUpLog = _helperService.GetLookUpLog(lookUp).Result;
 
-                            if (lookUpLog != null)
+                            if (lookUpLog == null)
                             {
-                                context.Result = new UnauthorizedObjectResult("lookUp is required"); ;
+                                context.Result = new UnauthorizedObjectResult("invalid transaction."); ;
                                 return;
                             }
-                            // Do something with requestModel (e.g., logging, validation, etc.)
+                            
                             var response =  _helperService.ValidateTransaction(transactionToken,
                                                                                     requestModel.senderAccountNumber,
                                                                                     lookUpLog.AccountNumber,
@@ -74,6 +74,10 @@ namespace AscomPayPG.Services.Filters
                                 return;
                             }
 
+                            // Reset the stream position for further reading
+                            var session = context.HttpContext.Session;
+                            session.SetObjectAsJson("LookUpId", lookUpLog.LookUpId);
+
                             System.Diagnostics.Debug.WriteLine($"[Authorization] Parsed Request: {JsonSerializer.Serialize(requestModel)}");
                         }
                         catch (JsonException ex)
@@ -81,9 +85,7 @@ namespace AscomPayPG.Services.Filters
                             System.Diagnostics.Debug.WriteLine($"[Authorization] Failed to deserialize request body: {ex.Message}");
                         }
                     }
-                    // Reset the stream position for further reading
-                    var session = context.HttpContext.Session;
-                    session.SetObjectAsJson("lookUpLog", lookUp);
+                    
                     request.Body.Position = 0;
                 }
             }
