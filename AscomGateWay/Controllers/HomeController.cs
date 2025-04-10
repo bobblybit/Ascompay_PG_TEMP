@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using AscomPayPG.Filters;
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
@@ -224,6 +225,7 @@ namespace AscomPayPG.Controllers
 
         [HttpPost("transfer")]
         [ServiceFilter(typeof(InternalTransactionValidator))]
+        [ServiceFilter(typeof(UserSessionValidator))]
         public async Task<IActionResult> TransferFund([FromBody] TransferRequestDTO mdoel)
         {
             var reponse = await _transactionService.TransferFundInternal(mdoel);
