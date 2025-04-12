@@ -1086,7 +1086,7 @@ namespace AscomPayPG.Services.Implementation
                                     else
                                     {
                                         // registar transaction
-                                        var regResponse = await _clientRequestRepo.RegisterTransaction(requestModel.Amount, paymentProviderCharges, marchantCharge, requestModel.ReceiverAccountName,
+                                        var regResponse = await _clientRequestRepo.RegisterTransaction(requestModel.Amount, paymentProviderCharges, marchantCharge, recieverAccount.AccountName,
                                                                                                        sender, transactionReference, requestModel.Amount + vat + charges,
                                                                                                        requestModel.Decription, requestModel.TransactionType, vat, charges, PaymentProvider.AscomPay.ToString(),
                                                                                                        "", recieverAccount.AccountNumber, sourceWallet.WalletUID.ToString(), "");

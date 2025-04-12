@@ -16,7 +16,7 @@ namespace AscomPayPG.Services.Filters
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             var request = context.HttpContext.Request;
-            var transactionToken = context.HttpContext.Request.Headers["token"];
+            var transactionToken = context.HttpContext.Request.Headers["Xtoken"];
             if (string.IsNullOrEmpty(transactionToken) || string.IsNullOrWhiteSpace(transactionToken))
             {
                 context.Result = new UnauthorizedObjectResult("Token is required"); ;
