@@ -1069,7 +1069,7 @@ namespace AscomPayPG.Services.Implementation
                                                senderAccountNumber = senderAccount.AccountNumber,
                                            };
 
-                                            response = await waas.TransferOtherBank(TransferRequest9BSB, sender.UserUid.ToString(), senderAccount.AccountName, requestModel.ReceiverAccountOrWallet, requestModel.ReceiverAccountName, true, false, transactionReference);
+                                            response = await waas.TransferOtherBank(TransferRequest9BSB, sender.UserUid.ToString(), senderAccount.AccountName, recieverAccount.AccountNumber, recieverAccount.AccountName, true, false, transactionReference);
 
                                             if (!response.IsSuccessful)
                                             {
@@ -1204,7 +1204,7 @@ namespace AscomPayPG.Services.Implementation
                                        senderAccountNumber = sourceAccount.AccountNumber,
                                    };
 
-                                   response = await waas.TransferOtherBank(TransferRequest9BSB, sourceAccount.UserUid.ToString(), sourceAccount.AccountName, requestModel.ReceiverAccountName, requestModel.ReceiverAccountOrWallet, true, true, transactionReference);
+                                   response = await waas.TransferOtherBank(TransferRequest9BSB, sourceAccount.UserUid.ToString(), sourceAccount.AccountName, recieverAccount.AccountNumber, recieverAccount.AccountName, true, true, transactionReference);
 
                                    if (!response.IsSuccessful)
                                    {
@@ -1311,7 +1311,7 @@ namespace AscomPayPG.Services.Implementation
                                        senderAccountNumber = senderAccount.AccountNumber
                                    };
 
-                                   response = await waas.TransferOtherBank(TransferRequest9BSB, sender.UserUid.ToString(), senderAccount.AccountName, requestModel.ReceiverAccountName, requestModel.ReceiverAccountOrWallet, true, false, transactionReference);
+                                   response = await waas.TransferOtherBank(TransferRequest9BSB, sender.UserUid.ToString(), senderAccount.AccountName, requestModel.ReceiverAccountOrWallet, requestModel.ReceiverAccountName, true, false, transactionReference);
 
                                    if (!response.IsSuccessful)
                                    {
