@@ -3,7 +3,7 @@ using AscomPayPG.OfflineSecurity.Service.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace transacrtionSettlement;
+namespace AscomPayPG.OfflineSecurity.Service.Implementation;
 
 public class TransactionValidator : ITransactionValidator
 {
@@ -71,11 +71,11 @@ public class TransactionValidator : ITransactionValidator
     {
         var sendersUid = GetUserUidBySenderWalletId(transaction.SenderWalletId);
         // Recreate the transaction hash
-       
+
         //TODO: Get user nonce
 
         string transactionDataToHash = $"{transaction.TransactionId}|{sendersUid}|{transaction.SenderWalletId}|{transaction.ReceiverWalletId}|{transaction.TransactionAmount}|{transaction.TransactionDate}";
-        
+
         using (SHA256 sha256 = SHA256.Create())
         {
             byte[] transactionDataBytes = Encoding.UTF8.GetBytes(transactionDataToHash);
@@ -128,7 +128,7 @@ public class TransactionValidator : ITransactionValidator
         }
     }
 
-    public async Task<bool> ValidateBatchAndTransactions( OfflineTransactionRequest transactionsRequest)
+    public async Task<bool> ValidateBatchAndTransactions(OfflineTransactionRequest transactionsRequest)
     {
         // Step 0.1: Fetch the user's public key using userUid
         RSA thepublicKey = GetUserPublicKeyFromDatabase(transactionsRequest.keys.userUid);

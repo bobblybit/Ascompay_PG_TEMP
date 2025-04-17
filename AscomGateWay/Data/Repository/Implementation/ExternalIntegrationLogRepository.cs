@@ -16,5 +16,11 @@ namespace AscomPayPG.Data.Repository.Implementation
             _appDbContext.ExternalIntegrationLogs.Add(externalIntegrationLog);
             _appDbContext.SaveChanges();
         }
+
+        public async Task SaveAccountLookUp(AccountLookUpLog accountLookUpLog)
+        {
+            _appDbContext.AccountLookUpLog.Add(accountLookUpLog);
+            _appDbContext.SaveChanges();
+        }
     }
 }

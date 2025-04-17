@@ -1,6 +1,6 @@
-﻿using AscomPayPG.Models.DTO;
+﻿using AscomPayPG.Models;
+using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
-using DB_MODALS.Entities;
 
 namespace AscomPayPG.Services.Interface
 {

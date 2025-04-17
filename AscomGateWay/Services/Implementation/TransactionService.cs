@@ -25,11 +25,11 @@ namespace AscomPayPG.Services.Implementation
         SmartObj smartObj;
         WAAS waas;
         private readonly WAAS _waas;
-
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public TransactionService(IClientRequestRepository<ClientRequest> clientRequestRepo,
                                   IServiceProvider serviceProvider,
-                                 ITransactionHelper transactionHelper, IConfiguration configuration, AppDbContext context)
+                                 ITransactionHelper transactionHelper, IConfiguration configuration, AppDbContext context, IHttpContextAccessor httpContextAccessor)
         {
             _clientRequestRepo = clientRequestRepo;
             _transactionHelper = transactionHelper;
@@ -38,6 +38,7 @@ namespace AscomPayPG.Services.Implementation
             smartObj = new SmartObj(_context);
             var logger = serviceProvider.GetRequiredService<ILogger<WAAS>>();
             waas = new WAAS(_configuration, context, _clientRequestRepo, _transactionHelper, logger);
+            _httpContextAccessor = httpContextAccessor;
         }
 /*        public async Task<TransferResponseDTO> TransferFundFromAccountOrWalletToAccount(TransferRequestDTO requestModel)
         {
@@ -645,12 +646,12 @@ namespace AscomPayPG.Services.Implementation
             return response;
         }
 
-        public async Task<AccountLookUpResponse> AccountLookup(accountLookupRequest accountLookupRequest, string userUid)
+        public async Task<AccountLookUpResponse> AccountLookup(accountLookupRequest accountLookupRequest, string userUId)
             {
             var response = new AccountLookUpResponse();
             try
             {
-                return  await waas.AccountLookup9PSB(accountLookupRequest, userUid);
+                return await waas.AccountLookup9PSB(accountLookupRequest, userUId);
 
                 /*var appUser = _context.Users.Where(x => x.UserUid == Guid.Parse(userUid)).FirstOrDefault();
                 if (appUser == null)
@@ -748,6 +749,26 @@ namespace AscomPayPG.Services.Implementation
                
                 var sender = new User();
                 var reciever = new User();
+
+             /*   string lookUpId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("LookUpId");
+                var lookUpRecord = _context.AccountLookUpLog
+                                           .OrderByDescending(x => x.DateCreated)
+                                           .FirstOrDefault(x => lookUpId == x.LookUpId
+                                                            && x.LookStatus == true
+                                                            && x.UsageStatus == (int)AccountLookUpUsageStatus.Init
+                                                            );*/
+
+               /* if (lookUpRecord == null)
+                {
+                    return new PlainResponse
+                    {
+                        IsSuccessful = false,
+                        Message = "invalid receiver",
+                        Data = 0,
+                    };
+                }*/
+
+
 
                 #region ASCOM ACCOUNT TO WALLET
                 if (requestModel.TransactionType == TransactionTypes.AscomPayAccountToWallet.ToString())
@@ -1045,14 +1066,10 @@ namespace AscomPayPG.Services.Implementation
                                                bank = "9BSP",
                                                Description = requestModel.Decription,
                                                Narration = requestModel.Decription,
-                                               RecieverName = recieverAccount.AccountName,
-                                               RecieverNumber = requestModel.ReceiverAccountOrWallet,
-                                               UserId = sender.UserUid.ToString(),
                                                senderAccountNumber = senderAccount.AccountNumber,
-                                               senderName = senderAccount.AccountName,
                                            };
 
-                                            response = await waas.TransferOtherBank(TransferRequest9BSB, true, false, transactionReference);
+                                            response = await waas.TransferOtherBank(TransferRequest9BSB, sender.UserUid.ToString(), senderAccount.AccountName, recieverAccount.AccountNumber, recieverAccount.AccountName, true, false, transactionReference);
 
                                             if (!response.IsSuccessful)
                                             {
@@ -1069,7 +1086,7 @@ namespace AscomPayPG.Services.Implementation
                                     else
                                     {
                                         // registar transaction
-                                        var regResponse = await _clientRequestRepo.RegisterTransaction(requestModel.Amount, paymentProviderCharges, marchantCharge, requestModel.ReceiverAccountName,
+                                        var regResponse = await _clientRequestRepo.RegisterTransaction(requestModel.Amount, paymentProviderCharges, marchantCharge, recieverAccount.AccountName,
                                                                                                        sender, transactionReference, requestModel.Amount + vat + charges,
                                                                                                        requestModel.Decription, requestModel.TransactionType, vat, charges, PaymentProvider.AscomPay.ToString(),
                                                                                                        "", recieverAccount.AccountNumber, sourceWallet.WalletUID.ToString(), "");
@@ -1184,14 +1201,10 @@ namespace AscomPayPG.Services.Implementation
                                        bank = "9BSP",
                                        Description = requestModel.Decription,
                                        Narration = requestModel.Decription,
-                                       RecieverName = recieverAccount.AccountName,
-                                       RecieverNumber = recieverAccount.AccountNumber,
-                                       UserId = sourceAccount.UserUid.ToString(),
                                        senderAccountNumber = sourceAccount.AccountNumber,
-                                       senderName = sourceAccount.AccountName
                                    };
 
-                                   response = await waas.TransferOtherBank(TransferRequest9BSB, true, true, transactionReference);
+                                   response = await waas.TransferOtherBank(TransferRequest9BSB, sourceAccount.UserUid.ToString(), sourceAccount.AccountName, recieverAccount.AccountNumber, recieverAccount.AccountName, true, true, transactionReference);
 
                                    if (!response.IsSuccessful)
                                    {
@@ -1295,14 +1308,10 @@ namespace AscomPayPG.Services.Implementation
                                        bank = "9BSP",
                                        Description = requestModel.Decription,
                                        Narration = requestModel.Decription,
-                                       RecieverName = requestModel.ReceiverAccountName,
-                                       RecieverNumber = requestModel.ReceiverAccountOrWallet,
-                                       UserId = sender.UserUid.ToString(),
-                                       senderAccountNumber = senderAccount.AccountNumber,
-                                       senderName = senderAccount.AccountName
+                                       senderAccountNumber = senderAccount.AccountNumber
                                    };
 
-                                   response = await waas.TransferOtherBank(TransferRequest9BSB, true, false, transactionReference);
+                                   response = await waas.TransferOtherBank(TransferRequest9BSB, sender.UserUid.ToString(), senderAccount.AccountName, requestModel.ReceiverAccountOrWallet, requestModel.ReceiverAccountName, true, false, transactionReference);
 
                                    if (!response.IsSuccessful)
                                    {

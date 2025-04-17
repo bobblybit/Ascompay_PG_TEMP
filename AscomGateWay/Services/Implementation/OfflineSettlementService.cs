@@ -11,10 +11,11 @@ using AscomPayPG.Models;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Models.Shared;
 using System.Security.Cryptography;
-using Common;
 using Newtonsoft.Json;
+using AscomPayPG.Helpers;
+using AscomPayPG.Services.Interface;
 
-namespace AscomPayPG.Services.Interface
+namespace AscomPayPG.Services.Implementation
 {
     public class OfflineSettlementService : IOfflineSettlementService
     {
@@ -36,7 +37,7 @@ namespace AscomPayPG.Services.Interface
             {
                 if (transactionTypeDetails.Add_Vat)
                 {
-                    return Math.Round((decimal)transactionTypeDetails.T_Vat / 100 * amount, 1);
+                    return Math.Round(transactionTypeDetails.T_Vat / 100 * amount, 1);
                 }
                 return 0;
             }
@@ -49,7 +50,7 @@ namespace AscomPayPG.Services.Interface
             {
 
                 if (transactionTypeDetails.By_Percent)
-                    return Math.Round((decimal)transactionTypeDetails.T_Percentage / 100 * amount, 1);
+                    return Math.Round(transactionTypeDetails.T_Percentage / 100 * amount, 1);
                 else if (transactionTypeDetails.By_Amount)
                     return transactionTypeDetails.T_Amount;
                 else return 0;
@@ -176,13 +177,13 @@ namespace AscomPayPG.Services.Interface
                     };
 
                     var responseFromPosting = await _transactionService.TransferFundInternal(transactionToPost);
-                    var  objAsString = JsonConvert.SerializeObject(responseFromPosting);
+                    var objAsString = JsonConvert.SerializeObject(responseFromPosting);
                     _logger.LogInformation($"TRANSFER RESPONSE::::::::::::::::{objAsString}");
 
                     if (responseFromPosting.IsSuccessful && transactionModel.Status == TransactionStatus.Success.ToString())
                     {
                         _logger.LogInformation($"TRANSACTION STATUS:::::::::::::::::::::::::::::::{transactionModel.Status} TRANSACTION REFERENCE:::::::::::::::::::::::::::::::::::{transactionModel.RequestTransactionId}");
-                        var settlementResponse = await SettleBalance(sourceAccount, receiverAccount, debitWallet, recieverWallet, (decimal)transactionModel.Amount);
+                        var settlementResponse = await SettleBalance(sourceAccount, receiverAccount, debitWallet, recieverWallet, transactionModel.Amount);
                         if (!settlementResponse)
                         {
                             var transactionRetry = new TransactionRetry
@@ -249,7 +250,7 @@ namespace AscomPayPG.Services.Interface
                 }
                 #endregion
 
-                Total = (decimal)transactionModel.Amount++;
+                Total = transactionModel.Amount++;
                 _appContext.Transactions.Add(transactionModel);
                 await _appContext.SaveChangesAsync();
                 response.Balance = (decimal)debitWallet.CurrentBalance;
@@ -282,11 +283,11 @@ namespace AscomPayPG.Services.Interface
             receiverAccount.PrevioseBalance += receiverAccountPreviousBalance;
             receiverAccount.CurrentBalance -= amount;
 
-           /* sourceAccount.LegerBalance-= amount;    
-            receiverAccount.LegerBalance += amount;*/
+            /* sourceAccount.LegerBalance-= amount;    
+             receiverAccount.LegerBalance += amount;*/
 
             _appContext.UserWallets.UpdateRange(new List<UserWallet> { senderWallet, receiverWallet });
-           _appContext.Accounts.UpdateRange(new List<Models.DTO.Account> { sourceAccount, receiverAccount });
+            _appContext.Accounts.UpdateRange(new List<Models.DTO.Account> { sourceAccount, receiverAccount });
             return await _appContext.SaveChangesAsync() > 0;
         }
 
@@ -316,7 +317,7 @@ namespace AscomPayPG.Services.Interface
 
                 if (userOfflineWallets.Count > 0)
                 {
-                    serialisedObject = SecurityHelper.SerializeObject<List<UserWallet>>(userOfflineWallets);
+                    serialisedObject = SecurityHelper.SerializeObject(userOfflineWallets);
                 }
 
                 var encryptedWallets = SecurityHelper.Encrypt(serialisedObject, key, iv);
@@ -337,7 +338,7 @@ namespace AscomPayPG.Services.Interface
                 {
                     Data = response,
                     Errors = null,
-                    IsSuccessful= true,
+                    IsSuccessful = true,
                     Message = "Transactions were settled successfully",
                     ResponseCode = StatusCodes.Status200OK
                 };
@@ -351,10 +352,10 @@ namespace AscomPayPG.Services.Interface
 
         public async Task<List<UserWallet>> GetListOfUserOflineWallet(string userId)
         {
-                   return  _appContext.UserWallets.Include(x => x.WalletType)
-                     .Where(x => x.WalletType.Name.ToLower() == Data.Enum.WalletType.OFFLINE.ToString().ToLower() && x.UserUid.ToString() == userId)
-                     .ToList();
+            return _appContext.UserWallets.Include(x => x.WalletType)
+              .Where(x => x.WalletType.Name.ToLower() == Data.Enum.WalletType.OFFLINE.ToString().ToLower() && x.UserUid.ToString() == userId)
+              .ToList();
         }
-         
+
     }
 }

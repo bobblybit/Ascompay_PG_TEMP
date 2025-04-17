@@ -1,5 +1,6 @@
 ﻿using AscomPayPG.Data;
 using AscomPayPG.Data.Enum;
+using AscomPayPG.Helpers;
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
@@ -16,6 +17,7 @@ namespace AscomPayPG.Services.Implementation
         private readonly AppDbContext _context;
         private readonly IClientRequestRepository<ClientRequest> _clientRequestRepo;
         private readonly ITransactionHelper _transactionHelper;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<WalletService> _loggerWS;
         WAAS waas;
 
@@ -24,6 +26,7 @@ namespace AscomPayPG.Services.Implementation
                             AppDbContext context,
                             ITransactionHelper transactionHelper,
                              IServiceProvider serviceProvider,
+                             IHttpContextAccessor httpContextAccessor,
                              ILogger<WalletService> loggerWS
                             )
         {
@@ -35,6 +38,7 @@ namespace AscomPayPG.Services.Implementation
 
 
             _transactionHelper = transactionHelper;
+            _httpContextAccessor = httpContextAccessor;
             _loggerWS = loggerWS;
             waas = new WAAS(_configuration, context, _clientRequestRepo, _transactionHelper, logger);
         }
@@ -234,6 +238,28 @@ namespace AscomPayPG.Services.Implementation
         }//-------> from contrller 1
         public async Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model)
         {
+
+            var userId =  _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("UserUid");
+            var lookUpId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("LookUpId");
+            var lookUpRecord = _context.AccountLookUpLog
+                                       .OrderByDescending(x => x.DateCreated)
+                                       .FirstOrDefault(x => x.InitaitorId == userId 
+                                                        && lookUpId == x.LookUpId 
+                                                        && x.LookStatus == true 
+                                                        && x.UsageStatus == (int)AccountLookUpUsageStatus.Init
+                                                        );
+
+            if (lookUpRecord == null)
+            {
+                return new PlainResponse
+                {
+                    IsSuccessful = false,
+                    Message = "invalid receiver",
+                    Data = 0,
+                };
+            }
+
+
             PlainResponse response = new PlainResponse();
             try
             {
@@ -255,7 +281,7 @@ namespace AscomPayPG.Services.Implementation
                     };
                 }
 
-                response = await waas.TransferOtherBank(model, false, true, transactionReference);
+                response = await waas.TransferOtherBank(model, sourceAccount.UserUid.ToString(), sourceAccount.AccountName, lookUpRecord.AccountNumber, lookUpRecord.AccountName, false, true, transactionReference);
 
                 if (!response.IsSuccessful)
                 {
@@ -271,7 +297,7 @@ namespace AscomPayPG.Services.Implementation
                 await UpdateSourceAccount(sourceAccount, decimal.Parse(model.Amount) + vat + charges);
 
 
-                var debit = await _clientRequestRepo.BuildDebit(decimal.Parse(model.Amount), paymentProviderCharges, marchantCharge, model.RecieverName,
+                var debit = await _clientRequestRepo.BuildDebit(decimal.Parse(model.Amount), paymentProviderCharges, marchantCharge, lookUpRecord.AccountName,
                                                                                       transactionReference, decimal.Parse(model.Amount) + vat + charges, model.Description,
                                                                                       TransactionTypes.TransferToOthersBanks.ToString(),
                                                                                       sourceAccount.AccountName,

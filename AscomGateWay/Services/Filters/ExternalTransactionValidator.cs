@@ -1,10 +1,11 @@
-﻿using AscomPayPG.Models.DTO;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Text.Json;
 using System.Text;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Data.Enum;
+using AscomPayPG.Models.DTO;
+using AscomPayPG.Helpers;
 
 namespace AscomPayPG.Services.Filters
 {
@@ -19,13 +20,22 @@ namespace AscomPayPG.Services.Filters
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             var request = context.HttpContext.Request;
-            var transactionToken = context.HttpContext.Request.Headers["token"];
+
+            string lookUpUId = "";
+
+            var transactionToken = context.HttpContext.Request.Headers["Xtoken"];
             if (string.IsNullOrEmpty(transactionToken) || string.IsNullOrWhiteSpace(transactionToken))
             {
                 context.Result = new UnauthorizedObjectResult("Token is required"); ;
                 return;
             }
-
+            
+            var lookUp = context.HttpContext.Request.Headers["Lookup"];
+            if (string.IsNullOrEmpty(lookUp) || string.IsNullOrWhiteSpace(lookUp))
+            {
+                context.Result = new UnauthorizedObjectResult("lookUp is required");
+                return;
+            }
 
             if (request.ContentLength > 0 && request.Body.CanRead)
             {
@@ -42,10 +52,19 @@ namespace AscomPayPG.Services.Filters
                             {
                                 PropertyNameCaseInsensitive = true // Ignore case differences in JSON keys
                             });
-                            // Do something with requestModel (e.g., logging, validation, etc.)
+
+
+                            var lookUpLog = _helperService.GetLookUpLog(lookUp).Result;
+
+                            if (lookUpLog == null)
+                            {
+                                context.Result = new UnauthorizedObjectResult("invalid transaction."); ;
+                                return;
+                            }
+                            
                             var response =  _helperService.ValidateTransaction(transactionToken,
                                                                                     requestModel.senderAccountNumber,
-                                                                                    requestModel.RecieverNumber,
+                                                                                    lookUpLog.AccountNumber,
                                                                                     decimal.Parse(requestModel.Amount),
                                                                                     TransactionTypes.TransferToOthersBanks.ToString()
                                                                                    ).Result;
@@ -55,6 +74,10 @@ namespace AscomPayPG.Services.Filters
                                 return;
                             }
 
+                            // Reset the stream position for further reading
+                            var session = context.HttpContext.Session;
+                            session.SetObjectAsJson("LookUpId", lookUpLog.LookUpId);
+
                             System.Diagnostics.Debug.WriteLine($"[Authorization] Parsed Request: {JsonSerializer.Serialize(requestModel)}");
                         }
                         catch (JsonException ex)
@@ -62,7 +85,7 @@ namespace AscomPayPG.Services.Filters
                             System.Diagnostics.Debug.WriteLine($"[Authorization] Failed to deserialize request body: {ex.Message}");
                         }
                     }
-                    // Reset the stream position for further reading
+                    
                     request.Body.Position = 0;
                 }
             }

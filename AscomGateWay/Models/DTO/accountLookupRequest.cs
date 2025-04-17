@@ -12,6 +12,7 @@ public class AccountLookUpResponse
     public string Message { get; set; }
     public int ResponseCode { get; set; }
     public LookUpResponseData Data { get; set; } = new LookUpResponseData();
+    public string LRId { get; set; }
 }
 
 public class LookUpResponseData

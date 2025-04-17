@@ -239,11 +239,7 @@ namespace AscomPayPG.Models.WAAS
 
     public class OtherBankTransferDTO {
         public string bank { get; set; }
-        public string RecieverName { get; set; }
-        public string RecieverNumber { get; set; }
         public string senderAccountNumber { get; set; }
-        public string senderName { get; set; }
-        public string UserId { get; set; }
         public string Narration { get; set; }
         public string Description { get; set; }
         public string Amount { get; set; }

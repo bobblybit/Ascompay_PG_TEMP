@@ -1,5 +1,4 @@
 using AscomPayPG.Models.DTO;
-using DB_MODALS.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AscomPayPG.Models;

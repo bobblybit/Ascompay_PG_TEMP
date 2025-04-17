@@ -1,6 +1,5 @@
 using AscomPayPG.Models;
 using AscomPayPG.Models.DTO;
-using DB_MODALS.Entities;
 using Microsoft.EntityFrameworkCore;
 namespace AscomPayPG.Data
 {
@@ -29,6 +28,7 @@ namespace AscomPayPG.Data
         public DbSet<Webhook> Webhook { get; set; }
         public DbSet<WalletType> WalletTypes { get; set; }
         public DbSet<UserExternalWallet> UserExternalWallets { get; set; }
+        public DbSet<AccountLookUpLog> AccountLookUpLog { get; set; }
 
         //public virtual DbSet<TransactionKey> TransactionKeys { get; set; }
 
@@ -59,5 +59,6 @@ namespace AscomPayPG.Data
         public DbSet<AccountTeir> AccountTiers { get; set; }
         public DbSet<TransactionJournal> TransactionJournal { get; set; }
         public DbSet<TransactionRetry> TransactionRetries { get; set; }
+        public DbSet<UserSession> UserSession { get; set; }
     }
 }
