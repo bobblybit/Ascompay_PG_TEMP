@@ -48,7 +48,7 @@ try
     builder.Services.AddDbContextPool<AppDbContext>(options =>
             options.UseSqlServer(connection.Message,
             opts => opts.CommandTimeout(timeout)
-     ), (int)ServiceLifetime.Scoped);*/
+     ), (int)ServiceLifetime.Scoped);
 
     var connectionLog = await encode.decrypt(builder.Configuration.GetConnectionString("AppLogConnectionString"), 1, Token);
 

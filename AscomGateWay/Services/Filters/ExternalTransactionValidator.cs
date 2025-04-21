@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Text;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Data.Enum;
-using AscomPayPG.Models.DTO;
 using AscomPayPG.Helpers;
 
 namespace AscomPayPG.Services.Filters
