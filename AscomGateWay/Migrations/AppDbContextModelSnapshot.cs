@@ -52,7 +52,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AccountTiers");
+                    b.ToTable("AccountTiers", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.Bank", b =>
@@ -73,7 +73,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Banks");
+                    b.ToTable("Banks", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.BlueSaltBVNVerificationLog", b =>
@@ -102,7 +102,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BlueSaltBVNVerificationLogs");
+                    b.ToTable("BlueSaltBVNVerificationLogs", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.ClientRequest", b =>
@@ -138,7 +138,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("ClientRequestId");
 
-                    b.ToTable("ClientRequests");
+                    b.ToTable("ClientRequests", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.Account", b =>
@@ -203,7 +203,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Accounts");
+                    b.ToTable("Accounts", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.TransactionsLog", b =>
@@ -256,7 +256,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("TransactionsLog");
+                    b.ToTable("TransactionsLog", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.TransactionType", b =>
@@ -306,7 +306,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("SN");
 
-                    b.ToTable("TransactionType");
+                    b.ToTable("TransactionType", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.User", b =>
@@ -424,7 +424,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.UserExternalWallet", b =>
@@ -529,7 +529,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("ExternalWalletId");
 
-                    b.ToTable("UserExternalWallets");
+                    b.ToTable("UserExternalWallets", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.UserWallet", b =>
@@ -579,7 +579,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("WalletTypeId");
 
-                    b.ToTable("UserWallets");
+                    b.ToTable("UserWallets", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.ExternalIntegrationLog", b =>
@@ -614,7 +614,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ExternalIntegrationLogs");
+                    b.ToTable("ExternalIntegrationLogs", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.PaymentGateway", b =>
@@ -642,7 +642,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("PaymentGatewayId");
 
-                    b.ToTable("PaymentGateways");
+                    b.ToTable("PaymentGateways", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.TransactionJournal", b =>
@@ -729,7 +729,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TransactionJournal");
+                    b.ToTable("TransactionJournal", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.TransactionRetry", b =>
@@ -786,7 +786,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TransactionRetries");
+                    b.ToTable("TransactionRetries", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.Transactions", b =>
@@ -895,7 +895,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("PaymentGatewayId");
 
-                    b.ToTable("Transactions");
+                    b.ToTable("Transactions", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.UserDeviceAuthentication", b =>
@@ -926,7 +926,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserDeviceAuthentication");
+                    b.ToTable("UserDeviceAuthentication", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.UserDeviceInformation", b =>
@@ -969,7 +969,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserDeviceInformation");
+                    b.ToTable("UserDeviceInformation", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.UserKyc", b =>
@@ -1027,7 +1027,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("Kycid");
 
-                    b.ToTable("UserKycs");
+                    b.ToTable("UserKycs", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.WalletType", b =>
@@ -1054,7 +1054,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("WalletType");
+                    b.ToTable("WalletType", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.Webhook", b =>
@@ -1093,7 +1093,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("WebhookId");
 
-                    b.ToTable("Webhook");
+                    b.ToTable("Webhook", (string)null);
                 });
 
             modelBuilder.Entity("DB_MODALS.Entities.AccountUpgrade", b =>
@@ -1210,7 +1210,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AccountUpgrades");
+                    b.ToTable("AccountUpgrades", (string)null);
                 });
 
             modelBuilder.Entity("TransactionsUser", b =>
@@ -1225,7 +1225,7 @@ namespace AscomPayPG.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("TransactionsUser");
+                    b.ToTable("TransactionsUser", (string)null);
                 });
 
             modelBuilder.Entity("AscomPayPG.Models.DTO.Account", b =>

@@ -14,7 +14,6 @@ namespace AscomPayPG.Models
 
             UpdatedAt = DateTime.Now;
             Timestamp = DateTime.Now;
-            PaymentGateway = new PaymentGateway();
             User = new List<User>();
             TransactionsLogs = new List<TransactionsLog>();
         }
@@ -36,7 +35,7 @@ namespace AscomPayPG.Models
         public string? DestinationWallet { get; set; }
         public string? TransactionCategory { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public long? PaymentGatewayId { get; set; }
+        public long? PaymentGatewayId { get; set; } = 0;
         public string? Description { get; set; }
         public string? Email { get; set; }
         public bool? TransactionStatus { get; set; }

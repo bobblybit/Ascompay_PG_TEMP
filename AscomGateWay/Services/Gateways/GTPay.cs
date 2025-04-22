@@ -112,8 +112,8 @@ namespace AscomPayPG.Services.Gateways
                 if (!updateStatus) throw new Exception($"Transactions update for {dbTransactions.RequestTransactionId} failed!");
 
                 result.TransactionsAmount = dbTransactions.Amount;
-                result.Gateway = dbTransactions.PaymentGateway.Name!;
-                result.Reference = dbTransactions.RequestTransactionId!;
+/*                result.Gateway = dbTransactions.PaymentGateway.Name!;
+*/                result.Reference = dbTransactions.RequestTransactionId!;
                 result.RequestingClientUrl = string.IsNullOrEmpty(dbTransactions.CallbackURL) ? _configuration["App:HomePage"] : dbTransactions.CallbackURL;
                 result.Customer = dbTransactions.Email!;
 

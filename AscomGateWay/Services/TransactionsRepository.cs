@@ -121,8 +121,8 @@ namespace AscomPayPG.Services
             try
             {
                 var all = await _context.Transactions
-                                    .Include(x => x.PaymentGateway)
-                                    .OrderByDescending(x => x.Timestamp)
+/*                                    .Include(x => x.PaymentGateway)
+*/                                    .OrderByDescending(x => x.Timestamp)
                                     .ToListAsync();
                 return all;
             }
@@ -134,8 +134,8 @@ namespace AscomPayPG.Services
             try
             {
                 var item = await _context.Transactions
-                                     .Include(x => x.PaymentGateway)
-                                     .Where(x => x.TransactionId == itemId).FirstOrDefaultAsync();
+/*                                     .Include(x => x.PaymentGateway)
+*/                                     .Where(x => x.TransactionId == itemId).FirstOrDefaultAsync();
                 return item;
             }
             catch (Exception ex) { Console.WriteLine(ex); return null; }
@@ -156,7 +156,7 @@ namespace AscomPayPG.Services
                 result.PageSize = pageSize;
                 result.TotalPages = totalTransactionsCount > pageSize ? (int)totalTransactionsCount / pageSize : totalTransactionsCount;
 
-                result.Transactions = await _context.Transactions.Include(x => x.PaymentGateway).OrderByDescending(x => x.Timestamp)
+                result.Transactions = await _context.Transactions.OrderByDescending(x => x.Timestamp)
                                                             .Skip(page * pageSize).Take(pageSize)
                                                             .ToListAsync();
                 return result;
@@ -178,7 +178,7 @@ namespace AscomPayPG.Services
                 result.PageSize = pageSize;
                 result.TotalPages = totalTransactionsCount > pageSize ? (int)totalTransactionsCount / pageSize : totalTransactionsCount;
 
-                result.Transactions = await _context.Transactions.Where(a => a.UserUID == Guid.Parse(uid)).Include(x => x.PaymentGateway).OrderByDescending(x => x.Timestamp)
+                result.Transactions = await _context.Transactions.Where(a => a.UserUID == Guid.Parse(uid)).OrderByDescending(x => x.Timestamp)
                                                             .Skip(page * pageSize).Take(pageSize)
                                                             .ToListAsync();
                 return result;
@@ -190,7 +190,7 @@ namespace AscomPayPG.Services
         {
             try
             {
-                var item = await _context.Transactions.Include(x => x.PaymentGateway).FirstOrDefaultAsync(x => x.RequestTransactionId == requestId);
+                var item = await _context.Transactions.FirstOrDefaultAsync(x => x.RequestTransactionId == requestId);
                 return item;
             }
             catch (Exception ex) { Console.WriteLine(ex); return null; }
@@ -202,7 +202,7 @@ namespace AscomPayPG.Services
 
             try
             {
-                var item = await _context.Transactions.Include(x => x.PaymentGateway).FirstOrDefaultAsync(x => x.RequestTransactionId == requestId);
+                var item = await _context.Transactions.FirstOrDefaultAsync(x => x.RequestTransactionId == requestId);
                 return item == null ? true : false;
             }
             catch (Exception ex) { Console.WriteLine(ex); return false; }

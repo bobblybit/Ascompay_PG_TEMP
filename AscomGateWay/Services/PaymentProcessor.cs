@@ -194,7 +194,7 @@ namespace AscomPayPG.Services
 
 
 
-                dbTransactions.PaymentGatewayId = selectedPaymentGateway.PaymentGatewayId;
+               // dbTransactions.PaymentGatewayId = selectedPaymentGateway.PaymentGatewayId;
                 dbTransactions.Description = $"Payment of {dbTransactions.Amount} via {selectedPaymentGateway.Name} | {dbTransactions.Description!.Split("|").Last()}";
                 //dbTransactions.StatusDescription = PaymentStatus.Pending.ToString();
                 dbTransactions.UpdatedAt = DateTime.Now;
@@ -236,14 +236,14 @@ namespace AscomPayPG.Services
                 var dbTransactions = await _TransactionsRepo.GetPayRequest(queryReqReference);
                 if (dbTransactions == null) throw new Exception($"Unable to fetch Transactions requestid: {queryReqReference}");
                 TransactionsCurrentStatus = dbTransactions.Status!;
-
+/*
                 var setGatewayStatus = await SetGatewayInstance(dbTransactions.PaymentGateway);
                 if (!setGatewayStatus.Status) throw new Exception($"Unable to set Payment Gateway");
 
                 var queryStatusRes = await _gatewayInstance!.PayQuery(queryReqReference, dbTransactions.PaymentGateway);
-                if (queryStatusRes == null) throw new Exception($"Unable Query Payment with reference {queryReqReference}");
+                if (queryStatusRes == null) throw new Exception($"Unable Query Payment with reference {queryReqReference}");*/
 
-                result = queryStatusRes;
+                result = new PayQueryResponse();
             }
             catch (Exception ex)
             {

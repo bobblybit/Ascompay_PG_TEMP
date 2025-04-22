@@ -1146,7 +1146,7 @@ namespace AscomPayPG.Services.Gateways
             try
             {
               //  respAccessToken = await GetAccessToken();
-                string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
+                string baseUrl = _configuration["ExternalPG:BaseUrl"];
                 string version = _configuration["WAASConfiguration:Version"];
                 string fullUrl = string.Empty;
 
@@ -1370,9 +1370,12 @@ namespace AscomPayPG.Services.Gateways
 
 
             var requestPayLoad = new Root9PSBAccVerificationPayLoad();
-            requestPayLoad.customer.account.senderaccountnumber = sourceAccount.AccountNumber;
-            requestPayLoad.customer.account.number = accountLookupRequest.account_number;
-            requestPayLoad.customer.account.bank = accountLookupRequest.bank_code;
+
+            var lookupRequestPayLoad = new AccountInquery();
+            lookupRequestPayLoad.source_account_number  = sourceAccount.AccountNumber;
+            lookupRequestPayLoad.account_number = accountLookupRequest.account_number;
+            lookupRequestPayLoad.bank_code = accountLookupRequest.bank_code;
+
 
            // var respAccessToken = await GetAccessToken();
             string baseUrl = _configuration["ExternalPG:BaseUrl"];
@@ -1386,7 +1389,7 @@ namespace AscomPayPG.Services.Gateways
               //  httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
                 fullUrl = $"{baseUrl}api/waas/account-look-up";
 
-                var payloadLoadAsJsonString = JsonConvert.SerializeObject(accountLookupRequest);
+                var payloadLoadAsJsonString = JsonConvert.SerializeObject(lookupRequestPayLoad);
 
                 ExternalIntegrationLog externalIntegrationLog = new ExternalIntegrationLog
                 {
@@ -1412,12 +1415,12 @@ namespace AscomPayPG.Services.Gateways
                         _context.SaveChanges();
                        
                         string apiResposnse = await response.Content.ReadAsStringAsync();
+                        //string apiResponse = await response.Content.ReadAsStringAsync();
+                        responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResposnse);
 
                         if (response.IsSuccessStatusCode)
                         {
-                            string apiResponse = await response.Content.ReadAsStringAsync();
 
-                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                             if (responseObj?.code == "00")
                             {
                                 accountLookUpResponse.IsSuccessful = true;

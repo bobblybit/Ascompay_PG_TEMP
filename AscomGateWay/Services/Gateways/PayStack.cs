@@ -88,8 +88,8 @@ namespace AscomPayPG.Services.Gateways
 
 
                 result.TransactionsAmount = dbTransactions.Amount;
-                result.Gateway = dbTransactions.PaymentGateway.Name;
-                result.Reference = dbTransactions.RequestTransactionId;
+/*                result.Gateway = dbTransactions.PaymentGateway.Name;
+*/                result.Reference = dbTransactions.RequestTransactionId;
                 result.RequestingClientUrl = string.IsNullOrEmpty(dbTransactions.CallbackURL) ? _configuration["App:HomePage"] : dbTransactions.CallbackURL;
                 result.Customer = dbTransactions.Email!;
 

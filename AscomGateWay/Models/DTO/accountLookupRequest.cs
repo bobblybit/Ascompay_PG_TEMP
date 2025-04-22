@@ -6,6 +6,14 @@ public class accountLookupRequest
     public string account_number { get; set; }
 }
 
+
+public class AccountInquery
+{
+    public string bank_code { get; set; }
+    public string account_number { get; set; }
+    public string source_account_number { get; set; }
+}
+
 public class AccountLookUpResponse
 {
     public bool IsSuccessful { get; set; }

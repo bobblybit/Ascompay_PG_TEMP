@@ -243,10 +243,10 @@ namespace AscomPayPG.Services.Implementation
             var lookUpId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("LookUpId");
             var lookUpRecord = _context.AccountLookUpLog
                                        .OrderByDescending(x => x.DateCreated)
-                                       .FirstOrDefault(x => x.InitaitorId == userId 
-                                                        && lookUpId == x.LookUpId 
-                                                        && x.LookStatus == true 
-                                                        && x.UsageStatus == (int)AccountLookUpUsageStatus.Init
+                                       .FirstOrDefault(x =>/* x.InitaitorId == userId 
+                                                        &&*/ lookUpId == x.LookUpId 
+                                                       /* && x.LookStatus == true 
+                                                        && x.UsageStatus == (int)AccountLookUpUsageStatus.Init*/
                                                         );
 
             if (lookUpRecord == null)
