@@ -7,7 +7,6 @@ using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Interface;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Dynamic;
 using System.Text;
@@ -1376,7 +1375,7 @@ namespace AscomPayPG.Services.Gateways
             requestPayLoad.customer.account.bank = accountLookupRequest.bank_code;
 
            // var respAccessToken = await GetAccessToken();
-            string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
+            string baseUrl = _configuration["ExternalPG:BaseUrl"];
             string version = _configuration["WAASConfiguration:Version"];
             string fullUrl = string.Empty;
 
@@ -1387,7 +1386,7 @@ namespace AscomPayPG.Services.Gateways
               //  httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
                 fullUrl = $"{baseUrl}api/waas/account-look-up";
 
-                var payloadLoadAsJsonString = JsonConvert.SerializeObject(requestPayLoad);
+                var payloadLoadAsJsonString = JsonConvert.SerializeObject(accountLookupRequest);
 
                 ExternalIntegrationLog externalIntegrationLog = new ExternalIntegrationLog
                 {
@@ -1402,8 +1401,6 @@ namespace AscomPayPG.Services.Gateways
                 StringContent content = new StringContent(payloadLoadAsJsonString, Encoding.UTF8, "application/json");
                 AccountLookUpResponse accountLookUpResponse = new AccountLookUpResponse();
 
-
-
                 try
                 {
                     using (var response = await httpClient.PostAsync(fullUrl, content))
@@ -1413,6 +1410,8 @@ namespace AscomPayPG.Services.Gateways
                         externalIntegrationLog.ResponseTime = DateTime.Now;
                         _context.ExternalIntegrationLogs.Add(externalIntegrationLog);
                         _context.SaveChanges();
+                       
+                        string apiResposnse = await response.Content.ReadAsStringAsync();
 
                         if (response.IsSuccessStatusCode)
                         {
