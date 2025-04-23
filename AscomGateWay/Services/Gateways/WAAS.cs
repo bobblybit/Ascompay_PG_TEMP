@@ -1280,7 +1280,7 @@ namespace AscomPayPG.Services.Gateways
                             respObj.IsSuccessful = false;
                             string apiResponse = await response.Content.ReadAsStringAsync();
                             responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                            respObj.Message = responseObj.data.message;
+                            respObj.Message = responseObj.message;
                             respObj.Data = null;
                             respObj.ResponseCode = (int)response.StatusCode;
                         }

@@ -533,7 +533,7 @@ namespace AscomPayPG.Services.Implementation
 
                 var accountEntity = await _clientRequestRepo.GetUserAccount(payload.accountnumber);
                 var hookEntity = _context.Webhook.FirstOrDefault(x => x.Reference == payload.transactionref);
-                if (hookEntity == null)
+                if (hookEntity == null && hookEntity.IsSettled == false)
                 {
                     response.message = payload.message.ToLower();
                     response.success = true;
@@ -605,6 +605,14 @@ namespace AscomPayPG.Services.Implementation
                         response.status = payload.message.ToLower();
                         response.transactionref = payload.transactionref;
                     }
+                }
+                else
+                {
+                    response.message = "posibly settled or Invalid transaction";
+                    response.success = false;
+                    response.status = "failed";
+                    response.transactionref = payload.transactionref;
+                    return response;
                 }
             }
             catch (Exception ex)

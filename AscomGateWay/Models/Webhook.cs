@@ -22,6 +22,6 @@ namespace AscomPayPG.Models
         public string? Service { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-
+        public bool IsSettled { get; set; }
     }
 }
