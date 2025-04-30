@@ -60,5 +60,6 @@ namespace AscomPayPG.Data
         public DbSet<TransactionJournal> TransactionJournal { get; set; }
         public DbSet<TransactionRetry> TransactionRetries { get; set; }
         public DbSet<UserSession> UserSession { get; set; }
+        public DbSet<PaymentGateWayMiddlewareLog> PaymentGateWayMiddlewareLogs { get; set; }
     }
 }

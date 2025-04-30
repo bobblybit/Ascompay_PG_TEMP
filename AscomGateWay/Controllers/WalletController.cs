@@ -36,25 +36,7 @@ namespace AscomPayPG.Controllers
         /// <response code="415">method not allowed, This response is returned when this endpoint is called with HHTP Method other than a Get()</response>
         /// <response code="500">Internal server error</response>
         /// <returns></returns>
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPost("create-access-token")]
-        public async Task<IActionResult> CreateAccessToken()
-        {
-            var response = await _walletService.AccessToken();
-            if (response.IsSuccessful == true)
-            {
-                return Ok(response);
-            }
-            else
-            {
-                return BadRequest(response);
-            }
-        }
-       
+        
         /// <summary>
         ///   This endpoint creates 9PSB wallet
         /// </summary>
@@ -130,6 +112,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("wallet-enquiry")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         public async Task<IActionResult> WalletEnquiry([FromBody] WalletRequest model)
         {
             var response = await _walletService.WalletEnquiry(model);
@@ -142,6 +125,7 @@ namespace AscomPayPG.Controllers
                 return BadRequest(response);
             }
         }
+
         /// <summary>
         ///   This endpoint gets wallet status using walletNo
         /// </summary>

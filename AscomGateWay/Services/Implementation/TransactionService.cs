@@ -37,8 +37,8 @@ namespace AscomPayPG.Services.Implementation
             _context = context;
             smartObj = new SmartObj(_context);
             var logger = serviceProvider.GetRequiredService<ILogger<WAAS>>();
-            waas = new WAAS(_configuration, context, _clientRequestRepo, _transactionHelper, logger);
             _httpContextAccessor = httpContextAccessor;
+            waas = new WAAS(_configuration, context, _clientRequestRepo, _transactionHelper, logger, _httpContextAccessor);
         }
 /*        public async Task<TransferResponseDTO> TransferFundFromAccountOrWalletToAccount(TransferRequestDTO requestModel)
         {
@@ -660,31 +660,6 @@ namespace AscomPayPG.Services.Implementation
             try
             {
                 return await waas.AccountLookup9PSB(accountLookupRequest, userUId);
-
-                /*var appUser = _context.Users.Where(x => x.UserUid == Guid.Parse(userUid)).FirstOrDefault();
-                if (appUser == null)
-                {
-                    response.Data = null;
-                    response.IsSuccessful = false;
-                    response.Message = "Invalid user";
-                    response.ResponseCode = StatusCodes.Status400BadRequest;
-                    return response;
-                }
-                var resp = await smartObj.AccountLookup(accountLookupRequest);
-                if (response.ResponseCode == StatusCodes.Status200OK)
-                {
-                    response.Data = resp.Data;
-                    response.IsSuccessful = resp.IsSuccessful;
-                    response.Message = resp.Message;
-                    response.ResponseCode = resp.ResponseCode;
-                }
-                else
-                {
-                    response.Data = resp.Data;
-                    response.IsSuccessful = resp.IsSuccessful;
-                    response.Message = resp.Message;
-                    response.ResponseCode = resp.ResponseCode;
-                }*/
             }
             catch (Exception ex)
             {

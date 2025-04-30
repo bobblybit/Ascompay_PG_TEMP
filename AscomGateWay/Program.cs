@@ -238,6 +238,6 @@ try
 }
 catch (Exception ex)
 {
-
+    Log.Error($"{ex.Message}");
     throw;
 }

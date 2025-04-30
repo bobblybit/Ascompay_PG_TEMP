@@ -19,88 +19,23 @@ namespace AscomPayPG.Services.Gateways
         private readonly AppDbContext _context;
         private readonly IClientRequestRepository<ClientRequest> _clientRequestRepo;
         private readonly ITransactionHelper _transactionHelper;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<WAAS> _logger;
 
         public WAAS(IConfiguration configuration,
                     AppDbContext context, 
                     IClientRequestRepository<ClientRequest> clientRequestRepo,
                     ITransactionHelper transactionHelper,
-                    ILogger<WAAS>logger
+                    ILogger<WAAS>logger,
+                    IHttpContextAccessor httpContextAccessor
                     )
         {
             _configuration = configuration;
             _context = context;
             _clientRequestRepo = clientRequestRepo;
             _transactionHelper = transactionHelper;
+            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
-        }
-
-
-        public async Task<PlainResponse> GetAccessToken()
-        {
-            PlainResponse respObj = new PlainResponse();
-            try
-            {
-                AuthenticateRequest requestData = new AuthenticateRequest();
-                string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
-                string version = _configuration["WAASConfiguration:Version"];
-                requestData.username = _configuration["WAASConfiguration:Username"];
-                requestData.password = _configuration["WAASConfiguration:Password"];
-                requestData.clientId = _configuration["WAASConfiguration:ClientId"];
-                requestData.clientSecret = _configuration["WAASConfiguration:ClientSecret"];
-                string fullUrl = string.Empty;
-
-
-                dynamic responseObj = new ExpandoObject();
-                using (var httpClient = new HttpClient())
-                {
-                    httpClient.DefaultRequestHeaders.Accept.Clear();
-                    fullUrl = $"{baseUrl}api/{version}/authenticate";
-                    StringContent content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
-                    using (var response = await httpClient.PostAsync(fullUrl, content))
-                    {
-                        string apiResponse = await response.Content.ReadAsStringAsync();
-
-                        var log = new ExternalIntegrationLog
-                        {
-                            CreatedBy = "Ascompay",
-                            RequestTime = DateTime.Now,
-                            RequestPayload = JsonConvert.SerializeObject(requestData),
-                            Response = apiResponse,
-                            ResponseTime = DateTime.Now,
-                            Service = "Payment",
-                            Vendor = "9PSB",
-                        };
-                        _context.ExternalIntegrationLogs.Add(log);
-                        _context.SaveChanges();
-                        if (response.IsSuccessStatusCode)
-                        {
-                            respObj.IsSuccessful = true;
-                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                            respObj.Data = responseObj.accessToken;
-                            respObj.ResponseCode = (int)response.StatusCode;
-                            respObj.Message = responseObj.message;
-                        }
-                        else
-                        {
-                            respObj.IsSuccessful = false;
-                            apiResponse = await response.Content.ReadAsStringAsync();
-                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                            respObj.Message = responseObj.message;
-                            respObj.Data = responseObj;
-                            respObj.ResponseCode = (int)response.StatusCode;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                respObj.IsSuccessful = false;
-                respObj.Message = ex.Message;
-                respObj.Data = null;
-                return respObj;
-            }
-            return respObj;
         }
         public async Task<PlainResponse> OpenWallet(string userUid)
         {
@@ -110,13 +45,10 @@ namespace AscomPayPG.Services.Gateways
             OpenWalletRequest requestData = new OpenWalletRequest();
             string bvn = string.Empty;
             BlueSaltBvnVerificationResponseDTO bvnVerificationResponse = new BlueSaltBvnVerificationResponseDTO();
-            //bvnVerificationResponse.results = new Models.DTO.Results();
-            //bvnVerificationResponse.results.personal_info = new PersonalInfo();
+           
             try
             {
-                //respAccessToken = await GetAccessToken();
-                string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
-                string version = _configuration["WAASConfiguration:Version"];
+                string baseUrl = _configuration["AscomServices:PGM"];
                 var appUser = await _context.Users.FirstOrDefaultAsync(x => x.UserUid == Guid.Parse(userUid));
 
                 if (appUser != null)
@@ -176,14 +108,16 @@ namespace AscomPayPG.Services.Gateways
                             }
 
                         }
-                        string fullUrl = string.Empty;
+                        
                         dynamic responseObj = new ExpandoObject();
                         using (var httpClient = new HttpClient())
                         {
-                            httpClient.DefaultRequestHeaders.Accept.Clear();
-                          //  httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                            fullUrl = $"{baseUrl}api/waas/open_wallet";
+                          
+                           string  fullUrl = $"{baseUrl}api/waas/open-wallet";
+                            AddHeaders(httpClient, JsonConvert.SerializeObject(requestData), fullUrl, Guid.NewGuid().ToString().Replace("-", ""));
+                            var _requestTime = DateTime.Now;
                             StringContent content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
+
                             using (var response = await httpClient.PostAsync(fullUrl, content))
                             {
                                 string apiResponse = await response.Content.ReadAsStringAsync();
@@ -191,7 +125,7 @@ namespace AscomPayPG.Services.Gateways
                                 var log = new ExternalIntegrationLog
                                 {
                                     CreatedBy = userUid,
-                                    RequestTime = DateTime.Now,
+                                    RequestTime = _requestTime,
                                     RequestPayload = JsonConvert.SerializeObject(requestData),
                                     Response = apiResponse,
                                     ResponseTime = DateTime.Now,
@@ -201,10 +135,10 @@ namespace AscomPayPG.Services.Gateways
                                 _context.ExternalIntegrationLogs.Add(log);
                                 _context.SaveChanges();
 
+                                    responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                                 if (response.IsSuccessStatusCode)
                                 {
 
-                                    responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
                                     if ((int)response.StatusCode == StatusCodes.Status200OK)
                                     {
                                         if (responseObj.status == "SUCCESS")
@@ -308,24 +242,22 @@ namespace AscomPayPG.Services.Gateways
         }
         public async Task<PlainResponse> WalletEnquiry(WalletRequest model)
         {
-
             PlainResponse respObj = new PlainResponse();
             PlainResponse respAccessToken = new PlainResponse();
             string bvn = string.Empty;
             try
             {
                // respAccessToken = await GetAccessToken();
-                string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
-                string version = _configuration["WAASConfiguration:Version"];
-                string fullUrl = string.Empty;
-
-
-                dynamic responseObj = new ExpandoObject();
+                string baseUrl = _configuration["AscomServices:PGM"];
+                dynamic responseObj = new PlainResponse();
                 using (var httpClient = new HttpClient())
                 {
-                    httpClient.DefaultRequestHeaders.Accept.Clear();
-                  //  httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/waas/wallet_enquiry";
+
+                 // string fullUrl = $"{baseUrl}api/waas/wallet-enquiry";
+                  string fullUrl = $"https://localhost:44388/api/waas/wallet-enquiry";
+
+                    AddHeaders(httpClient, JsonConvert.SerializeObject(model), fullUrl, Guid.NewGuid().ToString().Replace("-",""));
+                    var _requestTime = DateTime.Now;
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
                     {
@@ -333,7 +265,7 @@ namespace AscomPayPG.Services.Gateways
                         var log = new ExternalIntegrationLog
                         {
                             CreatedBy = "Ascompay",
-                            RequestTime = DateTime.Now,
+                            RequestTime = _requestTime,
                             RequestPayload = JsonConvert.SerializeObject(model),
                             Response = apiResponse,
                             ResponseTime = DateTime.Now,
@@ -344,36 +276,35 @@ namespace AscomPayPG.Services.Gateways
                         _context.SaveChanges();
                         if (response.IsSuccessStatusCode)
                         {
-                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                            if ((int)response.StatusCode == StatusCodes.Status200OK)
+                            responseObj = JsonConvert.DeserializeObject<dynamic>(apiResponse);
+                            //(responseObj.data.code == ""
+                            if (responseObj?.data.code == "00")
                             {
                                 respObj.IsSuccessful = true;
                                 respObj.Data = responseObj.data;
-                                //update account balance
-                                //var accountEntity = await _clientRequestRepo.GetUserAccount(model.accountNo);
-                                //if (accountEntity != null)
-                                //{
-                                //    decimal amount = Convert.ToDecimal(responseObj.data.availableBalance);
-                                //    decimal newBalance = await UpdateDestinationAccountBalance(accountEntity, amount);
-                                //}
-                                //else
-                                //{
-                                //    respObj.IsSuccessful = false;
-                                //    respObj.Data = null;
-                                //}
-
                                 respObj.ResponseCode = (int)response.StatusCode;
-                                respObj.Message = responseObj.message;
+                                respObj.Message = responseObj.data.message;
                             }
                             else
                             {
                                 respObj.IsSuccessful = false;
-                                apiResponse = await response.Content.ReadAsStringAsync();
-                                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                                respObj.Message = responseObj.message;
                                 respObj.Data = null;
-                                respObj.ResponseCode = (int)response.StatusCode;
+                                respObj.Message = responseObj.data.message;
                             }
+                        }
+                        else
+                        {
+
+                            responseObj = JsonConvert.DeserializeObject<dynamic>(apiResponse);
+
+                            return new PlainResponse
+                            {
+                             ResponseCode = (int)response.StatusCode, 
+                             Message = responseObj.message,
+                             IsSuccessful = false,
+                             Data = null, 
+                             transaction_reference = null
+                            };
                         }
                     }
                 }
@@ -387,6 +318,312 @@ namespace AscomPayPG.Services.Gateways
             }
             return respObj;
         }
+        public async Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model,
+                                                         string userId,
+                                                         string sendAccountName,
+                                                          string lookUpNumber,
+                                                          string lookUpName,
+                                                          bool isInternal = false,
+                                                          bool isAccountToAccount = false,
+                                                          string transactionRef = "")
+        {
+
+            string transactionType = isInternal ? TransactionTypes.TransferToAscomUsers.ToString() : TransactionTypes.TransferToOthersBanks.ToString();
+
+            PlainResponse respObj = new PlainResponse();
+            PlainResponse respAccessToken = new PlainResponse();
+            string bvn = string.Empty;
+            var sourceAccount = await _context.Accounts.Include(x => x.AccountTeir).FirstOrDefaultAsync(x => x.AccountNumber == model.senderAccountNumber);
+            var sender = _context.Users.FirstOrDefault(x => x.UserUid.ToString() == userId);
+            var paymentProviderCharges = await GetPaymentProviderCharges(transactionType);
+            var marchantCharge = await CalculateCharges(decimal.Parse(model.Amount), transactionType);
+            var charges = paymentProviderCharges + marchantCharge;
+            var vat = await _transactionHelper.CalculateVAT(decimal.Parse(model.Amount) + charges, transactionType);
+            string senderNewBalance = string.Empty;
+
+            if (sender == null)
+            {
+                return new PlainResponse
+                {
+                    IsSuccessful = false,
+                    Message = "user account account does exist",
+                    Data = 0,
+                };
+            }
+
+            if (sourceAccount == null)
+            {
+                return new PlainResponse
+                {
+                    IsSuccessful = false,
+                    Message = "source account account does exist",
+                    Data = 0,
+                };
+            }
+
+            if ((decimal)sourceAccount.CurrentBalance < decimal.Parse(model.Amount) + charges + vat)
+            {
+                return new PlainResponse
+                {
+                    IsSuccessful = false,
+                    Message = "insufficient balance",
+                    Data = 0,
+                };
+            }
+
+            var transactionReference = string.IsNullOrEmpty(transactionRef) ? Guid.NewGuid().ToString().Substring(0, 20).Replace("-", "").ToUpper() : transactionRef;
+            var regResponse = await _clientRequestRepo.RegisterTransaction(decimal.Parse(model.Amount), paymentProviderCharges, marchantCharge,
+                                                                                  lookUpName, sender, transactionReference, decimal.Parse(model.Amount) + charges,
+                                                                                  model.Description, transactionType, vat, charges, PaymentProvider.NinePSB.ToString(),
+                                                                                  model.senderAccountNumber, lookUpNumber, "", "");
+            if (!regResponse)
+            {
+                return new PlainResponse
+                {
+                    IsSuccessful = false,
+                    Message = "Something went wrong while processing request",
+                    Data = 0,
+                };
+            }
+
+            try
+            {
+                //  respAccessToken = await GetAccessToken();
+                string baseUrl = _configuration["AscomServices:PGM"];
+                string fullUrl = string.Empty;
+
+                var payload = new OtherBankTransfer();
+                var externalUsers = _context.UserExternalWallets.FirstOrDefault(user => user.nuban == model.senderAccountNumber);
+
+                payload.customer.account = new Models.WAAS.Account
+                {
+                    bank = isInternal ? "120001" : model.bank,
+                    senderaccountnumber = model.senderAccountNumber,
+                    number = lookUpNumber,
+                    name = lookUpName,
+                    sendername = externalUsers != null ? externalUsers.name : "N/A",
+                };
+                payload.order.country = "NGN";
+                payload.order.currency = "Nigeria";
+                payload.transaction.sessionId = "";
+                payload.transaction.reference = transactionReference;
+                payload.merchant.merchantFeeAmount = marchantCharge.ToString(); // getMarchant
+                payload.merchant.merchantFeeAccount = "";
+                payload.narration = model.Narration;
+                payload.order.description = model.Description;
+                decimal amountToSend = decimal.Parse(model.Amount) + marchantCharge;
+                payload.order.amount = amountToSend.ToString();
+                payload.message = "";
+                payload.code = "";
+
+                dynamic responseObj = new ExpandoObject();
+                var payloadLoadAsJsonString = JsonConvert.SerializeObject(payload);
+                var bearer = _httpContextAccessor.HttpContext.Request.Headers["Authorization"];
+                var xtoken = _httpContextAccessor.HttpContext.Request.Headers["Xtoken"].ToString();
+
+                var accessToken = await GetAccessToken(payloadLoadAsJsonString, fullUrl, xtoken);
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.DefaultRequestHeaders.Accept.Clear();
+
+
+                    httpClient.DefaultRequestHeaders.Add("CrossAccess", $"{accessToken}");
+                    httpClient.DefaultRequestHeaders.Add("Authorization", $"{bearer}");
+                    httpClient.DefaultRequestHeaders.Add("Xtoken", $"{xtoken}");
+
+                    fullUrl = $"{baseUrl}api/waas/transfer-other-bank-9psb";
+
+                    var settings = new JsonSerializerSettings
+                    {
+                        ContractResolver = new CustomContractResolver(),
+                        Formatting = Formatting.Indented
+                    };
+
+                    var _requestTime = DateTime.Now;
+                    ExternalIntegrationLog externalIntegrationLog = new ExternalIntegrationLog
+                    {
+                        CreatedBy = userId,
+                        DateCreated = _requestTime,
+                        RequestTime = DateTime.Now,
+                        RequestPayload = payloadLoadAsJsonString,
+                        Vendor = "9PSB",
+                        Service = "Wallet/TransferToOtherBanks"
+                    };
+
+                    StringContent content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+                    using (var response = await httpClient.PostAsync(fullUrl, content))
+                    {
+                        externalIntegrationLog.Response = await response.Content.ReadAsStringAsync();
+                        externalIntegrationLog.ResponseTime = DateTime.Now;
+                        _context.ExternalIntegrationLogs.Add(externalIntegrationLog);
+                        _context.SaveChanges();
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string apiResponse = await response.Content.ReadAsStringAsync();
+
+                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                            //(responseObj.data.code == ""
+                            if (responseObj?.data.code == "00")
+                            {
+                                respObj.IsSuccessful = true;
+                                respObj.Data = responseObj.data;
+                                respObj.transaction_reference = payload.transaction.reference;
+                                var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Successful.ToString());
+
+                                respObj.ResponseCode = (int)response.StatusCode;
+                                respObj.Message = responseObj.data.message;
+
+                                WalletRequest senderWalletRequest = new WalletRequest()
+                                {
+                                    accountNo = sourceAccount.AccountNumber
+                                };
+
+                                PlainResponse getSenderWallet = await WalletEnquiry(senderWalletRequest);
+
+                                if (isInternal)
+                                {
+
+                                    var receiverAccount = await _clientRequestRepo.GetAccount(lookUpNumber);
+                                    var receiver = await _clientRequestRepo.GetUser(receiverAccount.UserUid.ToString());
+
+                                    PlainResponse receiverWallet = await WalletEnquiry(new WalletRequest { accountNo = lookUpNumber });
+                                    if (receiverWallet != null)
+                                    {
+                                        _transactionHelper.NotifyForCredit($"{receiver.FirstName} {receiver.LastName}", receiver.Email,
+                                                                           $"{sourceAccount.AccountName}", amountToSend.ToString(),
+                                                                            receiverWallet.Data.ledgerBalance.ToString(),
+                                                                            DateTime.Now.ToString(), payload.narration);
+
+
+                                        await _transactionHelper.NotifyForCreditSMS(receiver,
+                                                                          receiverAccount.AccountNumber,
+                                                                          amountToSend.ToString().ToString(),
+                                                                          receiverWallet.Data.ledgerBalance.ToString(),
+                                                                          model.Description);
+                                    }
+                                }
+
+                                _transactionHelper.NotifyForDebit(sender.Email, $"{sender.FirstName} {sender.LastName}",
+                                                                  amountToSend.ToString(), getSenderWallet.Data.ledgerBalance.ToString(),
+                                                                  vat.ToString(), charges.ToString(), DateTime.Now.ToString(),
+                                                                  payload.narration,
+                                                                  transactionReference);
+
+                                await _transactionHelper.NotifyForDebitSMS(sender,
+                                                                           sourceAccount.AccountNumber,
+                                                                           amountToSend.ToString().ToString(),
+                                                                           getSenderWallet.Data.ledgerBalance.ToString(),
+                                                                           model.Description);
+                            }
+                            else
+                            {
+                                respObj.IsSuccessful = false;
+                                respObj.Data = null;
+                                respObj.Message = responseObj.data.message;
+                                var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
+                            }
+                        }
+                        else
+                        {
+                            var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
+
+                            respObj.IsSuccessful = false;
+                            string apiResponse = await response.Content.ReadAsStringAsync();
+                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                            respObj.Message = responseObj.message;
+                            respObj.Data = null;
+                            respObj.ResponseCode = (int)response.StatusCode;
+                        }
+                    }
+                }
+            }
+
+            catch (Exception ex)
+            {
+                _logger.LogInformation($"ERROR:::::::::::::::::::::::::::::::::::::::::{ex.Message} {ex.StackTrace}");
+
+                var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
+                respObj.IsSuccessful = false;
+                respObj.Message = ex.Message;
+                respObj.Data = null;
+                return respObj;
+            }
+            return respObj;
+        }
+
+        public async Task<PlainResponse> WalletTransactions(WalletTransactionRequest model)
+        {
+            PlainResponse respObj = new PlainResponse();
+            PlainResponse respAccessToken = new PlainResponse();
+            string bvn = string.Empty;
+            try
+            {
+                string baseUrl = _configuration["AscomServices:PGM"];
+                dynamic responseObj = new ExpandoObject();
+                using (var httpClient = new HttpClient())
+                {   
+                    string fullUrl = $"{baseUrl}api/waas/wallet-transactions";
+                    StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
+                    AddHeaders(httpClient, JsonConvert.SerializeObject(model), fullUrl, Guid.NewGuid().ToString().Replace("-", ""));
+                    var _requestTime = DateTime.Now;
+
+                    using (var response = await httpClient.PostAsync(fullUrl, content))
+                    {
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var log = new ExternalIntegrationLog
+                            {
+                                CreatedBy = model.accountNumber,
+                                RequestTime = _requestTime,
+                                RequestPayload = JsonConvert.SerializeObject(model),
+                                Response = apiResponse,
+                                ResponseTime = DateTime.Now,
+                                Service = "Payment",
+                                Vendor = "9PSB",
+                            };
+                            _context.ExternalIntegrationLogs.Add(log);
+                            _context.SaveChanges();
+
+                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                            if ((int)response.StatusCode == StatusCodes.Status200OK)
+                            {
+                                respObj.IsSuccessful = true;
+                                respObj.Data = responseObj.data;
+                            }
+                            else
+                            {
+                                respObj.IsSuccessful = false;
+                                respObj.Data = null;
+                            }
+
+                            respObj.ResponseCode = (int)response.StatusCode;
+                            respObj.Message = responseObj.message;
+                        }
+                        else
+                        {
+                            respObj.IsSuccessful = false;
+                            apiResponse = await response.Content.ReadAsStringAsync();
+                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                            respObj.Message = responseObj.message;
+                            respObj.Data = null;
+                            respObj.ResponseCode = (int)response.StatusCode;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respObj.IsSuccessful = false;
+                respObj.Message = ex.Message;
+                respObj.Data = null;
+                return respObj;
+            }
+            return respObj;
+        }
+
         public async Task<PlainResponse> UpgradeToTier3(WalletUpgradeTier3Request model)
         {
 
@@ -771,80 +1008,6 @@ namespace AscomPayPG.Services.Gateways
             }
             return respObj;
         }
-        public async Task<PlainResponse> WalletTransactions(WalletTransactionRequest model)
-        {
-            PlainResponse respObj = new PlainResponse();
-            PlainResponse respAccessToken = new PlainResponse();
-            string bvn = string.Empty;
-            try
-            {
-               // respAccessToken = await GetAccessToken();
-                string baseUrl = _configuration["WAASConfiguration:BaseUrl"];
-                string version = _configuration["WAASConfiguration:Version"];
-                string fullUrl = string.Empty;
-
-                dynamic responseObj = new ExpandoObject();
-                using (var httpClient = new HttpClient())
-                {
-                    httpClient.DefaultRequestHeaders.Accept.Clear();
-                    //httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/waas/wallet_transactions";
-                    StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
-                    using (var response = await httpClient.PostAsync(fullUrl, content))
-                    {
-                        string apiResponse = await response.Content.ReadAsStringAsync();
-
-                        if (response.IsSuccessStatusCode)
-                        {
-                            var log = new ExternalIntegrationLog
-                            {
-                                CreatedBy = model.accountNumber,
-                                RequestTime = DateTime.Now,
-                                RequestPayload = JsonConvert.SerializeObject(model),
-                                Response = apiResponse,
-                                ResponseTime = DateTime.Now,
-                                Service = "Payment",
-                                Vendor = "9PSB",
-                            };
-                            _context.ExternalIntegrationLogs.Add(log);
-                            _context.SaveChanges();
-
-                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                            if ((int)response.StatusCode == StatusCodes.Status200OK)
-                            {
-                                respObj.IsSuccessful = true;
-                                respObj.Data = responseObj.data;
-                            }
-                            else
-                            {
-                                respObj.IsSuccessful = false;
-                                respObj.Data = null;
-                            }
-
-                            respObj.ResponseCode = (int)response.StatusCode;
-                            respObj.Message = responseObj.message;
-                        }
-                        else
-                        {
-                            respObj.IsSuccessful = false;
-                            apiResponse = await response.Content.ReadAsStringAsync();
-                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                            respObj.Message = responseObj.message;
-                            respObj.Data = null;
-                            respObj.ResponseCode = (int)response.StatusCode;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                respObj.IsSuccessful = false;
-                respObj.Message = ex.Message;
-                respObj.Data = null;
-                return respObj;
-            }
-            return respObj;
-        }
         public async Task<PlainResponse> WalletRequery(WalletRequeryRequest model)
         {
             PlainResponse respObj = new PlainResponse();
@@ -1075,119 +1238,145 @@ namespace AscomPayPG.Services.Gateways
             return respObj;
         }
 
-        public async Task<PlainResponse> TransferOtherBank(OtherBankTransferDTO model,
-                                                          string userId,
-                                                          string sendAccountName,
-                                                           string lookUpNumber,
-                                                           string lookUpName,
-                                                           bool isInternal = false, 
-                                                           bool isAccountToAccount = false, 
-                                                           string transactionRef = "")
-        {
+       
 
-            string transactionType = isInternal ? TransactionTypes.TransferToAscomUsers.ToString() : TransactionTypes.TransferToOthersBanks.ToString();
 
-            PlainResponse respObj = new PlainResponse();
-            PlainResponse respAccessToken = new PlainResponse();
-            string bvn = string.Empty;
-            var sourceAccount = await _context.Accounts.Include(x => x.AccountTeir).FirstOrDefaultAsync(x => x.AccountNumber == model.senderAccountNumber);
-            var sender = _context.Users.FirstOrDefault(x => x.UserUid.ToString() == userId);
-            var paymentProviderCharges = await GetPaymentProviderCharges(transactionType);
-            var marchantCharge = await CalculateCharges(decimal.Parse(model.Amount), transactionType);
-            var charges = paymentProviderCharges + marchantCharge;
-            var vat = await _transactionHelper.CalculateVAT(decimal.Parse(model.Amount) + charges, transactionType);
-            string senderNewBalance = string.Empty;
-          
-            if (sender == null)
+
+
+        #region Transaction Helpers
+            private async Task<string> GetAccessToken(string payload, string requestUrl, string xToken)
             {
-                return new PlainResponse
+
+                if (xToken == null)
+                    return null;
+                string iP = SmartObj.GetServerLocalIp();
+                if (iP == null)
+                    return null;
+           
+                string generatedDate = DateTime.Now.ToString();
+                SmartObj.CreatePasswordHash($"{xToken}X{iP}X{generatedDate}", out byte[] accessTokenHash, out byte[] accessTokenSalt);
+                SmartObj.CreatePasswordHash($"{payload}", out byte[] payloadHash, out byte[] payloadSalt);
+
+                var log = new PaymentGateWayMiddlewareLog
                 {
-                    IsSuccessful = false,
-                    Message = "user account account does exist",
-                    Data = 0,
+                    AccessToken = Convert.ToBase64String(accessTokenHash),
+                    RquestUrl = requestUrl,
+                    GenerationDate = generatedDate,
+                    AccessTokenHash = accessTokenHash,
+                    AccessTokenSalt = accessTokenSalt,
+                    PayloadHash = payloadHash,
+                    PayloadSalt = payloadSalt,
+                    Ip = iP
                 };
-            }
 
-            if (sourceAccount == null)
+                _context.PaymentGateWayMiddlewareLogs.Add(log);
+
+
+                if (!(_context.SaveChanges() > 0))
+                    return null;
+
+                return Convert.ToBase64String(accessTokenHash);
+            }
+            private async Task AddHeaders(HttpClient httpClient, string payloadLoadAsJsonString, string fullUrl, string _xToken = "")
             {
-                return new PlainResponse
+                var bearer = _httpContextAccessor.HttpContext.Request.Headers["Authorization"];
+                var xtoken = !string.IsNullOrEmpty(_httpContextAccessor.HttpContext.Request.Headers["Xtoken"].ToString()) ? _httpContextAccessor.HttpContext.Request.Headers["Xtoken"].ToString() : _xToken;
+                var accessToken = await GetAccessToken(payloadLoadAsJsonString, fullUrl, xtoken);
+
+
+                httpClient.DefaultRequestHeaders.Accept.Clear();
+                httpClient.DefaultRequestHeaders.Add("CrossAccess", $"{accessToken}");
+                httpClient.DefaultRequestHeaders.Add("Authorization", $"{bearer}");
+                httpClient.DefaultRequestHeaders.Add("Xtoken", $"{xtoken}");
+            }
+            public async Task<decimal> UpdateDestinationAccountBalance(Models.DTO.Account account, decimal amount)
+            {
+                var currentBalance = account.CurrentBalance;
+                account.CurrentBalance += amount;
+                account.PrevioseBalance = currentBalance;
+                var walletsBalance = await GetUserTotalWalletBalance(account.UserUid.ToString());
+                account.LegerBalance = account.CurrentBalance + walletsBalance;
+                _context.Accounts.Update(account);
+                await _context.SaveChangesAsync();
+                return account.CurrentBalance ?? 0;
+            }
+            private async Task<decimal> GetUserTotalWalletBalance(string userId)
+            {
+                var userWallets = _context.UserWallets.Where(x => x.UserUid.ToString() == userId).ToList();
+                if (userWallets.Count() > 1)
                 {
-                    IsSuccessful = false,
-                    Message = "source account account does exist",
-                    Data = 0,
-                };
+                    return userWallets.Sum(uw => uw.CurrentBalance) ?? 0;
+                }
+                return 0;
             }
-
-            if ((decimal)sourceAccount.CurrentBalance < decimal.Parse(model.Amount) + charges + vat)
+            public async Task<decimal> GetPaymentProviderCharges(string transactionType)
             {
-                return new PlainResponse
+                var charges = await _context.TransactionType.FirstOrDefaultAsync(x => x.Ttype.Replace(" ", "").Replace("(", "").Replace(")", "") == transactionType);
+                return charges == null ? 0 : charges.T_Provider_Charges;
+            }
+            public async Task<decimal> CalculateCharges(decimal amount, string transactionType)
+            {
+                var transactionTypeDetails = _context.TransactionType.FirstOrDefault(x => x.Ttype
+                                                                                          .Replace(" ", "")
+                                                                                          .Replace("(", "")
+                                                                                          .Replace(")", "") == transactionType);
+                if (transactionTypeDetails != null)
                 {
-                    IsSuccessful = false,
-                    Message = "insufficient balance",
-                    Data = 0,
-                };
+                    if (transactionTypeDetails.By_Percent)
+                        return Math.Round(transactionTypeDetails.T_Percentage / 100 * amount, 1);
+                    else
+                        return transactionTypeDetails.T_Amount;
+                }
+                return 0;
             }
-
-            var transactionReference =  string.IsNullOrEmpty(transactionRef) ? Guid.NewGuid().ToString().Substring(0, 20).Replace("-", "").ToUpper() : transactionRef;
-            var regResponse = await _clientRequestRepo.RegisterTransaction(decimal.Parse(model.Amount), paymentProviderCharges, marchantCharge,
-                                                                                  lookUpName, sender, transactionReference, decimal.Parse(model.Amount) + charges,
-                                                                                  model.Description, transactionType, vat, charges, PaymentProvider.NinePSB.ToString(),
-                                                                                  model.senderAccountNumber, lookUpNumber, "", "");
-            if (!regResponse)
+            public async Task<AccountLookUpResponse> AccountLookup9PSB(accountLookupRequest accountLookupRequest, string userId)
             {
-                return new PlainResponse
+                //PlainResponse respObj = new PlainResponse();
+
+                // check user
+                var sender = _context.Users.FirstOrDefault(x => x.UserUid.ToString() == userId);
+                if (sender == null)
                 {
-                    IsSuccessful = false,
-                    Message = "Something went wrong while processing request",
-                    Data = 0,
-                };
-            }
+                    return new AccountLookUpResponse
+                    {
+                        IsSuccessful = false,
+                        Message = "user does exist",
+                        Data = null,
+                    };
+                }
 
-            try
-            {
-              //  respAccessToken = await GetAccessToken();
-                string baseUrl = _configuration["ExternalPG:BaseUrl"];
-                string version = _configuration["WAASConfiguration:Version"];
+                // check user account
+                var sourceAccount = await _context.Accounts.FirstOrDefaultAsync(x => x.UserUid.ToString() == userId);
+                if (sourceAccount == null)
+                {
+                    return new AccountLookUpResponse
+                    {
+                        IsSuccessful = false,
+                        Message = "user account account does exist",
+                        Data = null,
+                    };
+                }
+
+
+                var requestPayLoad = new Root9PSBAccVerificationPayLoad();
+
+                var lookupRequestPayLoad = new AccountInquery();
+                lookupRequestPayLoad.source_account_number  = sourceAccount.AccountNumber;
+                lookupRequestPayLoad.account_number = accountLookupRequest.account_number;
+                lookupRequestPayLoad.bank_code = accountLookupRequest.bank_code;
+
+
+               // var respAccessToken = await GetAccessToken();
+                string baseUrl = _configuration["AscomServices:PGM"];
                 string fullUrl = string.Empty;
-
-                var payload = new OtherBankTransfer();
-                var externalUsers = _context.UserExternalWallets.FirstOrDefault(user => user.nuban == model.senderAccountNumber);
-
-                payload.customer.account = new Models.WAAS.Account
-                {
-                    bank = isInternal ? "120001" : model.bank,
-                    senderaccountnumber = model.senderAccountNumber,
-                    number = lookUpNumber,
-                    name =   lookUpName,
-                    sendername = externalUsers != null ? externalUsers.name : "N/A",
-                };
-                payload.order.country = "NGN";
-                payload.order.currency = "Nigeria";
-                payload.transaction.sessionId = "";
-                payload.transaction.reference = transactionReference;
-                payload.merchant.merchantFeeAmount = marchantCharge.ToString(); // getMarchant
-                payload.merchant.merchantFeeAccount = "";
-                payload.narration = model.Narration;
-                payload.order.description = model.Description;
-                decimal amountToSend = decimal.Parse(model.Amount) + marchantCharge;
-                payload.order.amount = amountToSend.ToString();
-                payload.message = "";
-                payload.code = "";
 
                 dynamic responseObj = new ExpandoObject();
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
-                    //httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                    fullUrl = $"{baseUrl}api/waas/transfer-other-bank-9psb";
-
-                    var settings = new JsonSerializerSettings
-                    {
-                        ContractResolver = new CustomContractResolver(),
-                        Formatting = Formatting.Indented
-                    };
-
-                    var payloadLoadAsJsonString = JsonConvert.SerializeObject(payload);
+                   fullUrl = $"{baseUrl}api/waas/account-look-up";
+                var payloadLoadAsJsonString = JsonConvert.SerializeObject(lookupRequestPayLoad);
+                    await AddHeaders(httpClient, payloadLoadAsJsonString, fullUrl, Guid.NewGuid().ToString().Replace("-", ""));
 
                     ExternalIntegrationLog externalIntegrationLog = new ExternalIntegrationLog
                     {
@@ -1196,254 +1385,60 @@ namespace AscomPayPG.Services.Gateways
                         RequestTime = DateTime.Now,
                         RequestPayload = payloadLoadAsJsonString,
                         Vendor = "9PSB",
-                        Service = "Wallet/TransferToOtherBanks"
+                        Service = "account-look-up"
                     };
 
-                    StringContent content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
-                    using (var response = await httpClient.PostAsync(fullUrl, content))
+                    StringContent content = new StringContent(payloadLoadAsJsonString, Encoding.UTF8, "application/json");
+                    AccountLookUpResponse accountLookUpResponse = new AccountLookUpResponse();
+
+                    try
                     {
-                        externalIntegrationLog.Response = await response.Content.ReadAsStringAsync();
-                        externalIntegrationLog.ResponseTime = DateTime.Now;
-                        _context.ExternalIntegrationLogs.Add(externalIntegrationLog);
-                        _context.SaveChanges();
-
-                        if (response.IsSuccessStatusCode)
+                        using (var response = await httpClient.PostAsync(fullUrl, content))
                         {
-                            string apiResponse = await response.Content.ReadAsStringAsync();
 
-                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                            //(responseObj.data.code == ""
-                            if (responseObj?.data.code == "00")
+                            externalIntegrationLog.Response = await response.Content.ReadAsStringAsync();
+                            externalIntegrationLog.ResponseTime = DateTime.Now;
+                            _context.ExternalIntegrationLogs.Add(externalIntegrationLog);
+                            _context.SaveChanges();
+
+                            if (!response.IsSuccessStatusCode)
                             {
-                                respObj.IsSuccessful = true;
-                                respObj.Data = responseObj.data;
-                                respObj.transaction_reference = payload.transaction.reference;
-                                var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Successful.ToString());
-
-                                respObj.ResponseCode = (int)response.StatusCode;
-                                respObj.Message = responseObj.data.message;
-
-                                WalletRequest senderWalletRequest = new WalletRequest()
+                                 return  new AccountLookUpResponse
                                 {
-                                    accountNo = sourceAccount.AccountNumber
+                                    Data = null,
+                                    IsSuccessful = false,
+                                    Message = response.ReasonPhrase,
+                                    ResponseCode = ((int)response.StatusCode)
                                 };
-
-                                PlainResponse getSenderWallet = await WalletEnquiry(senderWalletRequest);
-
-                                if (isInternal)
-                                {
-
-                                    var receiverAccount = await _clientRequestRepo.GetAccount(lookUpNumber);
-                                    var receiver = await _clientRequestRepo.GetUser(receiverAccount.UserUid.ToString());
-
-                                    PlainResponse receiverWallet = await WalletEnquiry(new WalletRequest { accountNo = lookUpNumber });
-                                    if (receiverWallet != null)
-                                    {
-                                        _transactionHelper.NotifyForCredit($"{receiver.FirstName} {receiver.LastName}", receiver.Email,
-                                                                           $"{sourceAccount.AccountName}", amountToSend.ToString(),
-                                                                            receiverWallet.Data.ledgerBalance.ToString(),
-                                                                            DateTime.Now.ToString(), payload.narration);
-
-
-                                        await _transactionHelper.NotifyForCreditSMS(receiver,
-                                                                          receiverAccount.AccountNumber,
-                                                                          amountToSend.ToString().ToString(),
-                                                                          receiverWallet.Data.ledgerBalance.ToString(),
-                                                                          model.Description);
-                                    }
-                                }
-
-                                _transactionHelper.NotifyForDebit(sender.Email, $"{sender.FirstName} {sender.LastName}",
-                                                                  amountToSend.ToString(), getSenderWallet.Data.ledgerBalance.ToString(),
-                                                                  vat.ToString(), charges.ToString(), DateTime.Now.ToString(),
-                                                                  payload.narration,
-                                                                  transactionReference);
-
-                                await _transactionHelper.NotifyForDebitSMS(sender,
-                                                                           sourceAccount.AccountNumber,
-                                                                           amountToSend.ToString().ToString(),
-                                                                           getSenderWallet.Data.ledgerBalance.ToString(),
-                                                                           model.Description);
                             }
-                            else
-                            {
-                                respObj.IsSuccessful = false;
-                                respObj.Data = null;
-                                respObj.Message = responseObj.data.message;
-                                var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
-                            }
-                        }
-                        else
-                        {
-                           var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
-                            
-                            respObj.IsSuccessful = false;
-                            string apiResponse = await response.Content.ReadAsStringAsync();
-                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-                            respObj.Message = responseObj.message;
-                            respObj.Data = null;
-                            respObj.ResponseCode = (int)response.StatusCode;
-                        }
-                    }
-                }
-            }
 
-            catch (Exception ex)
-            {
-                _logger.LogInformation($"ERROR:::::::::::::::::::::::::::::::::::::::::{ex.Message} {ex.StackTrace}");
-
-                var updateResponse = await _clientRequestRepo.UpdateTransactionStatusByReference(transactionReference, PaymentStatus.Failed.ToString());
-                respObj.IsSuccessful = false;
-                respObj.Message = ex.Message;
-                respObj.Data = null;
-                return respObj;
-            }
-            return respObj;
-        }
-       
-        public async Task<decimal> UpdateDestinationAccountBalance(Models.DTO.Account account, decimal amount)
-        {
-            var currentBalance = account.CurrentBalance;
-            account.CurrentBalance += amount;
-            account.PrevioseBalance = currentBalance;
-            var walletsBalance = await GetUserTotalWalletBalance(account.UserUid.ToString());
-            account.LegerBalance = account.CurrentBalance + walletsBalance;
-            _context.Accounts.Update(account);
-            await _context.SaveChangesAsync();
-            return account.CurrentBalance ?? 0;
-        }
-        private async Task<decimal> GetUserTotalWalletBalance(string userId)
-        {
-            var userWallets = _context.UserWallets.Where(x => x.UserUid.ToString() == userId).ToList();
-            if (userWallets.Count() > 1)
-            {
-                return userWallets.Sum(uw => uw.CurrentBalance) ?? 0;
-            }
-            return 0;
-        }
-        public async Task<decimal> GetPaymentProviderCharges(string transactionType)
-        {
-            var charges = await _context.TransactionType.FirstOrDefaultAsync(x => x.Ttype.Replace(" ", "").Replace("(", "").Replace(")", "") == transactionType);
-            return charges == null ? 0 : charges.T_Provider_Charges;
-        }
-        public async Task<decimal> CalculateCharges(decimal amount, string transactionType)
-        {
-            var transactionTypeDetails = _context.TransactionType.FirstOrDefault(x => x.Ttype
-                                                                                      .Replace(" ", "")
-                                                                                      .Replace("(", "")
-                                                                                      .Replace(")", "") == transactionType);
-            if (transactionTypeDetails != null)
-            {
-                if (transactionTypeDetails.By_Percent)
-                    return Math.Round(transactionTypeDetails.T_Percentage / 100 * amount, 1);
-                else
-                    return transactionTypeDetails.T_Amount;
-            }
-            return 0;
-        }
-        public async Task<AccountLookUpResponse> AccountLookup9PSB(accountLookupRequest accountLookupRequest, string userId)
-        {
-            //PlainResponse respObj = new PlainResponse();
-
-            // check user
-            var sender = _context.Users.FirstOrDefault(x => x.UserUid.ToString() == userId);
-            if (sender == null)
-            {
-                return new AccountLookUpResponse
-                {
-                    IsSuccessful = false,
-                    Message = "user does exist",
-                    Data = null,
-                };
-            }
-            // check user account
-            var sourceAccount = await _context.Accounts.FirstOrDefaultAsync(x => x.UserUid.ToString() == userId);
-            if (sourceAccount == null)
-            {
-                return new AccountLookUpResponse
-                {
-                    IsSuccessful = false,
-                    Message = "user account account does exist",
-                    Data = null,
-                };
-            }
-
-
-            var requestPayLoad = new Root9PSBAccVerificationPayLoad();
-
-            var lookupRequestPayLoad = new AccountInquery();
-            lookupRequestPayLoad.source_account_number  = sourceAccount.AccountNumber;
-            lookupRequestPayLoad.account_number = accountLookupRequest.account_number;
-            lookupRequestPayLoad.bank_code = accountLookupRequest.bank_code;
-
-
-           // var respAccessToken = await GetAccessToken();
-            string baseUrl = _configuration["ExternalPG:BaseUrl"];
-            string version = _configuration["WAASConfiguration:Version"];
-            string fullUrl = string.Empty;
-
-            dynamic responseObj = new ExpandoObject();
-            using (var httpClient = new HttpClient())
-            {
-                httpClient.DefaultRequestHeaders.Accept.Clear();
-              //  httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {respAccessToken.Data}");
-                fullUrl = $"{baseUrl}api/waas/account-look-up";
-
-                var payloadLoadAsJsonString = JsonConvert.SerializeObject(lookupRequestPayLoad);
-
-                ExternalIntegrationLog externalIntegrationLog = new ExternalIntegrationLog
-                {
-                    CreatedBy = userId,
-                    DateCreated = DateTime.Now,
-                    RequestTime = DateTime.Now,
-                    RequestPayload = payloadLoadAsJsonString,
-                    Vendor = "9PSB",
-                    Service = "account-look-up"
-                };
-
-                StringContent content = new StringContent(payloadLoadAsJsonString, Encoding.UTF8, "application/json");
-                AccountLookUpResponse accountLookUpResponse = new AccountLookUpResponse();
-
-                try
-                {
-                    using (var response = await httpClient.PostAsync(fullUrl, content))
-                    {
-
-                        externalIntegrationLog.Response = await response.Content.ReadAsStringAsync();
-                        externalIntegrationLog.ResponseTime = DateTime.Now;
-                        _context.ExternalIntegrationLogs.Add(externalIntegrationLog);
-                        _context.SaveChanges();
                        
-                        string apiResposnse = await response.Content.ReadAsStringAsync();
-                        //string apiResponse = await response.Content.ReadAsStringAsync();
-                        responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResposnse);
+                            string apiResposnse = await response.Content.ReadAsStringAsync();
+                            responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResposnse);
 
-                        if (response.IsSuccessStatusCode)
-                        {
-
-                            if (responseObj?.code == "00")
+                            if (responseObj.isSuccessful)
                             {
-                                accountLookUpResponse.IsSuccessful = true;
-                                accountLookUpResponse.ResponseCode = StatusCodes.Status200OK;
-                                accountLookUpResponse.Message = responseObj.message;
-                                accountLookUpResponse.Data.account_number = responseObj.customer.account.number;
-                                accountLookUpResponse.Data.account_name = responseObj.customer.account.name;
+                                    accountLookUpResponse.IsSuccessful = true;
+                                    accountLookUpResponse.ResponseCode = StatusCodes.Status200OK;
+                                    accountLookUpResponse.Message = responseObj.message;
+                                     accountLookUpResponse.Data.account_number = responseObj.data.account_number;
+                                    accountLookUpResponse.Data.account_name = responseObj.data.account_name;
 
-                                // save response 
-                                var lookUp = new AccountLookUpLog
-                                {
-                                    AccountName = responseObj.customer.account.name,
-                                    AccountNumber = responseObj.customer.account.number,
-                                    UsageStatus = (int)AccountLookUpUsageStatus.Init,
-                                    LookUpBank = accountLookupRequest.bank_code,
-                                    LookStatus = true,
-                                    InitaitorId = userId,
-                                    LookUpId = Guid.NewGuid().ToString().Substring(0, 18).Replace("-", ""),
-                                };
-                                _context.AccountLookUpLog.Add(lookUp);
-                                _context.SaveChanges();
-                                accountLookUpResponse.LRId = lookUp.LookUpId;
-                                return accountLookUpResponse;
+                                    // save response 
+                                    var lookUp = new AccountLookUpLog
+                                    {
+                                        AccountName = responseObj.data.account_name,
+                                        AccountNumber = responseObj.data.account_number,
+                                        UsageStatus = (int)AccountLookUpUsageStatus.Init,
+                                        LookUpBank = accountLookupRequest.bank_code,
+                                        LookStatus = true,
+                                        InitaitorId = userId,
+                                        LookUpId = Guid.NewGuid().ToString().Substring(0, 18).Replace("-", ""),
+                                    };
+                                    _context.AccountLookUpLog.Add(lookUp);
+                                    _context.SaveChanges();
+                                    accountLookUpResponse.LRId = lookUp.LookUpId;
+                                    return accountLookUpResponse;
                             }
                             else
                             {
@@ -1451,12 +1446,12 @@ namespace AscomPayPG.Services.Gateways
                                 // save response 
                                 var lookUp = new AccountLookUpLog
                                 {
-                                    AccountName =string.Empty,
+                                    AccountName = string.Empty,
                                     AccountNumber = accountLookupRequest.account_number,
                                     UsageStatus = (int)AccountLookUpUsageStatus.failed,
                                     LookUpBank = accountLookupRequest.bank_code,
                                     InitaitorId = userId,
-                                    LookUpId = string.Empty,
+                                    LookUpId = Guid.NewGuid().ToString().Substring(0, 18).Replace("-", ""),
                                 };
                                 _context.AccountLookUpLog.Add(lookUp);
                                 _context.SaveChanges();
@@ -1469,38 +1464,16 @@ namespace AscomPayPG.Services.Gateways
                                 return accountLookUpResponse;
                             }
                         }
-                        else
-                        {
-
-                            // save response 
-                            var lookUp = new AccountLookUpLog
-                            {
-                                AccountName = string.Empty,
-                                AccountNumber = accountLookupRequest.account_number,
-                                UsageStatus = (int)AccountLookUpUsageStatus.failed,
-                                LookUpBank = accountLookupRequest.bank_code,
-                                InitaitorId = userId,
-                                LookUpId = Guid.NewGuid().ToString().Substring(0, 18).Replace("-", ""),
-                            };
-                            _context.AccountLookUpLog.Add(lookUp);
-                            _context.SaveChanges();
-                            accountLookUpResponse.LRId = lookUp.LookUpId;
-
-                            accountLookUpResponse.IsSuccessful = false;
-                            accountLookUpResponse.Data = null;
-                            accountLookUpResponse.ResponseCode = StatusCodes.Status400BadRequest;
-                            accountLookUpResponse.Message = responseObj.message;
-                            return accountLookUpResponse;
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw;
                     }
                 }
-                catch (Exception ex)
-                {
-
-                    throw;
-                }
             }
-        }
+
+        #endregion
+
 
     }
 }

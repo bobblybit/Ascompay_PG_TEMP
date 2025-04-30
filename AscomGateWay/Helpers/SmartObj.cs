@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Dynamic;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -239,6 +240,32 @@ namespace AscomPayPG.Helpers
                 return respObj;
             }
             return respObj;
+        }
+        public static bool VerifyPasswordHash(string password, byte[]? passwordHash, byte[]? passwordSalt)
+        {
+            using HMACSHA512 hmac = new HMACSHA512(passwordSalt);
+            byte[] computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return computedHash.SequenceEqual(passwordHash);
+        }
+        public static void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
+        {
+            using HMACSHA512 hmac = new HMACSHA512();
+            passwordSalt = hmac.Key;
+            passwordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+        }
+
+        public static string GetServerLocalIp()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                {
+                    return ip.ToString(); // IPv4
+                }
+            }
+
+            return null;
         }
 
         public static string GenRefNo()

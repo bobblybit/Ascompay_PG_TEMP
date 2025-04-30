@@ -40,24 +40,9 @@ namespace AscomPayPG.Services.Implementation
             _transactionHelper = transactionHelper;
             _httpContextAccessor = httpContextAccessor;
             _loggerWS = loggerWS;
-            waas = new WAAS(_configuration, context, _clientRequestRepo, _transactionHelper, logger);
+            waas = new WAAS(_configuration, context, _clientRequestRepo, _transactionHelper, logger, _httpContextAccessor);
         }
-        public async Task<PlainResponse> AccessToken()
-        {
-            PlainResponse response = new PlainResponse();
-            try
-            {
-                response = await waas.GetAccessToken();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred: {ex.Message}");
-                response.IsSuccessful = false;
-                response.Message = ex.Message;
-                response.ResponseCode = StatusCodes.Status500InternalServerError;
-            }
-            return response;
-        }
+ 
         public async Task<PlainResponse> OpenWallet(string userUid)
         {
             PlainResponse response = new PlainResponse();
@@ -243,10 +228,10 @@ namespace AscomPayPG.Services.Implementation
             var lookUpId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("LookUpId");
             var lookUpRecord = _context.AccountLookUpLog
                                        .OrderByDescending(x => x.DateCreated)
-                                       .FirstOrDefault(x =>/* x.InitaitorId == userId 
-                                                        &&*/ lookUpId == x.LookUpId 
-                                                       /* && x.LookStatus == true 
-                                                        && x.UsageStatus == (int)AccountLookUpUsageStatus.Init*/
+                                       .FirstOrDefault(x => x.InitaitorId == userId 
+                                                        && lookUpId == x.LookUpId 
+                                                        && x.LookStatus == true 
+                                                        && x.UsageStatus == (int)AccountLookUpUsageStatus.Init
                                                         );
 
             if (lookUpRecord == null)

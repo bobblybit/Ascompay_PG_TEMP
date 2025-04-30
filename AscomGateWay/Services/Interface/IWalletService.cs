@@ -6,7 +6,7 @@ namespace AscomPayPG.Services.Interface
 {
     public interface IWalletService
     {
-        public Task<PlainResponse> AccessToken();
+        //public Task<PlainResponse> AccessToken();
         public Task<PlainResponse> OpenWallet(string userUid);
         public Task<PlainResponse> WalletEnquiry(WalletRequest model);
         public Task<PlainResponse> WalletStatus(WalletRequest model);

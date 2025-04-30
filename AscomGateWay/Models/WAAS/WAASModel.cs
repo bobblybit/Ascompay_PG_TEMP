@@ -93,6 +93,7 @@ namespace AscomPayPG.Models.WAAS
     public class WalletRequest
     {
         public string accountNo { get; set; }
+
     }
 
     public class GetWalletRequest

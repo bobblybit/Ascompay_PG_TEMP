@@ -20,15 +20,18 @@ namespace AscomPayPG.Controllers
         private readonly ITransactionService _transactionService;
         private readonly AppDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ILogger<TransactionController> _logger;
         private readonly IOfflineSettlementService _offlineSettlemen;
 
         public TransactionController(ITransactionService transactionService, AppDbContext context,
                                      IHttpContextAccessor httpContextAccessor,
+                                     ILogger<TransactionController> logger,
                                     IOfflineSettlementService offlineSettlemen)
         {
             _transactionService = transactionService;
             _context = context;
             _httpContextAccessor = httpContextAccessor;
+            _logger = logger;
             _offlineSettlemen = offlineSettlemen;
         }
 
@@ -166,16 +169,24 @@ namespace AscomPayPG.Controllers
         [ServiceFilter(typeof(UserSessionValidator))]
         public async Task<IActionResult> AccountLookup([FromBody] accountLookupRequest model)
         {
-            string userUId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("UserUid");
+            try
+            {
+                string userUId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("UserUid");
 
-            var response = await _transactionService.AccountLookup(model, userUId);
-            if (response.IsSuccessful == true)
-            {
-                return Ok(response);
+                var response = await _transactionService.AccountLookup(model, userUId);
+                if (response.IsSuccessful == true)
+                {
+                    return Ok(response);
+                }
+                else
+                {
+                    return BadRequest(response);
+                }
             }
-            else
+            catch (Exception er)
             {
-                return BadRequest(response);
+                _logger.LogError(er.Message);
+                throw;
             }
         }
 

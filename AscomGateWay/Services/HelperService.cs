@@ -332,10 +332,10 @@ namespace AscomPayPG.Services
 
             return _context.AccountLookUpLog
                                      .OrderByDescending(x => x.DateCreated)
-                                     .FirstOrDefaultAsync(x => /*x.InitaitorId == userId
-                                                      && */lookUpId == x.LookUpId
-                                                     /* && x.LookStatus == true
-                                                      && x.UsageStatus == (int)AccountLookUpUsageStatus.Init*/
+                                     .FirstOrDefaultAsync(x => x.InitaitorId == userId
+                                                      && lookUpId == x.LookUpId
+                                                      && x.LookStatus == true
+                                                      && x.UsageStatus == (int)AccountLookUpUsageStatus.Init
                                                       );
         }
 
