@@ -11,5 +11,8 @@ namespace AscomPayPG.Services.Interface
         public void NotifyForDebit(string mailReciever, string receiverFullName, string amount, string balance, string vat, string charges, string transactionTime, string description, string transactionReference);
         public Task NotifyForDebitSMS(User appUser, string sourceAccount, string amount, string balance, string description);
         public Task NotifyForCreditSMS(User appUser, string receiverAccount, string amount, string balance, string description);
+        public Task<string> GetAccessToken(string payload, string requestUrl, string xToken);
+        public Task<Dictionary<string, string>> GetPGMRequestHeaders(string payloadLoadAsJsonString, string fullUrl, string _xToken = "");
+        public Task AddHeaders(HttpClient httpClient, string payloadLoadAsJsonString, string fullUrl, string _xToken = "");
     }
 }

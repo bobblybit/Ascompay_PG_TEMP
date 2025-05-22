@@ -6,6 +6,7 @@ using AscomPayPG.Models.DTO;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.WAAS;
 using AscomPayPG.Services.Interface;
+using DB_MODALS.DTO;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Dynamic;
@@ -114,7 +115,7 @@ namespace AscomPayPG.Services.Gateways
                         {
                           
                            string  fullUrl = $"{baseUrl}api/waas/open-wallet";
-                            AddHeaders(httpClient, JsonConvert.SerializeObject(requestData), fullUrl, Guid.NewGuid().ToString().Replace("-", ""));
+                           _transactionHelper.AddHeaders(httpClient, JsonConvert.SerializeObject(requestData), fullUrl, Guid.NewGuid().ToString().Replace("-", ""));
                             var _requestTime = DateTime.Now;
                             StringContent content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
 
@@ -252,11 +253,9 @@ namespace AscomPayPG.Services.Gateways
                 dynamic responseObj = new PlainResponse();
                 using (var httpClient = new HttpClient())
                 {
+                    string fullUrl = $"{baseUrl}api/waas/wallet-enquiry";
 
-                 // string fullUrl = $"{baseUrl}api/waas/wallet-enquiry";
-                  string fullUrl = $"https://localhost:44388/api/waas/wallet-enquiry";
-
-                    AddHeaders(httpClient, JsonConvert.SerializeObject(model), fullUrl, Guid.NewGuid().ToString().Replace("-",""));
+                    _transactionHelper.AddHeaders(httpClient, JsonConvert.SerializeObject(model), fullUrl, Guid.NewGuid().ToString().Replace("-",""));
                     var _requestTime = DateTime.Now;
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
                     using (var response = await httpClient.PostAsync(fullUrl, content))
@@ -276,25 +275,24 @@ namespace AscomPayPG.Services.Gateways
                         _context.SaveChanges();
                         if (response.IsSuccessStatusCode)
                         {
-                            responseObj = JsonConvert.DeserializeObject<dynamic>(apiResponse);
-                            //(responseObj.data.code == ""
-                            if (responseObj?.data.code == "00")
+                           var responseObject = JsonConvert.DeserializeObject<NinePSBResponse>(apiResponse);
+                            if (responseObject.Data.responseCode == "00")
                             {
                                 respObj.IsSuccessful = true;
-                                respObj.Data = responseObj.data;
-                                respObj.ResponseCode = (int)response.StatusCode;
-                                respObj.Message = responseObj.data.message;
+                                respObj.Data = responseObject.Data;
+                                respObj.ResponseCode = responseObject.ResponseCode;
+                                respObj.Message = responseObject.Message;
+                                return respObj;
                             }
                             else
                             {
                                 respObj.IsSuccessful = false;
                                 respObj.Data = null;
-                                respObj.Message = responseObj.data.message;
+                                respObj.Message = responseObj.message;
                             }
                         }
                         else
                         {
-
                             responseObj = JsonConvert.DeserializeObject<dynamic>(apiResponse);
 
                             return new PlainResponse
@@ -421,7 +419,7 @@ namespace AscomPayPG.Services.Gateways
                 var bearer = _httpContextAccessor.HttpContext.Request.Headers["Authorization"];
                 var xtoken = _httpContextAccessor.HttpContext.Request.Headers["Xtoken"].ToString();
 
-                var accessToken = await GetAccessToken(payloadLoadAsJsonString, fullUrl, xtoken);
+                var accessToken = await _transactionHelper.GetAccessToken(payloadLoadAsJsonString, fullUrl, xtoken);
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Accept.Clear();
@@ -490,31 +488,41 @@ namespace AscomPayPG.Services.Gateways
                                     PlainResponse receiverWallet = await WalletEnquiry(new WalletRequest { accountNo = lookUpNumber });
                                     if (receiverWallet != null)
                                     {
-                                        _transactionHelper.NotifyForCredit($"{receiver.FirstName} {receiver.LastName}", receiver.Email,
-                                                                           $"{sourceAccount.AccountName}", amountToSend.ToString(),
-                                                                            receiverWallet.Data.ledgerBalance.ToString(),
-                                                                            DateTime.Now.ToString(), payload.narration);
+                                        if (receiver.IsNotificationEnabled.Value)
+                                        {
+
+                                            _transactionHelper.NotifyForCredit($"{receiver.FirstName} {receiver.LastName}", receiver.Email,
+                                                                               $"{sourceAccount.AccountName}", amountToSend.ToString(),
+                                                                                receiverWallet.Data.ledgerBalance.ToString(),
+                                                                                DateTime.Now.ToString(), payload.narration);
 
 
-                                        await _transactionHelper.NotifyForCreditSMS(receiver,
-                                                                          receiverAccount.AccountNumber,
-                                                                          amountToSend.ToString().ToString(),
-                                                                          receiverWallet.Data.ledgerBalance.ToString(),
-                                                                          model.Description);
+                                            await _transactionHelper.NotifyForCreditSMS(receiver,
+                                                                              receiverAccount.AccountNumber,
+                                                                              amountToSend.ToString().ToString(),
+                                                                              receiverWallet.Data.ledgerBalance.ToString(),
+                                                                              model.Description);
+                                        }
                                     }
                                 }
 
-                                _transactionHelper.NotifyForDebit(sender.Email, $"{sender.FirstName} {sender.LastName}",
-                                                                  amountToSend.ToString(), getSenderWallet.Data.ledgerBalance.ToString(),
-                                                                  vat.ToString(), charges.ToString(), DateTime.Now.ToString(),
-                                                                  payload.narration,
-                                                                  transactionReference);
 
-                                await _transactionHelper.NotifyForDebitSMS(sender,
-                                                                           sourceAccount.AccountNumber,
-                                                                           amountToSend.ToString().ToString(),
-                                                                           getSenderWallet.Data.ledgerBalance.ToString(),
-                                                                           model.Description);
+                                if (sender.IsNotificationEnabled.Value)
+                                {
+
+                                    _transactionHelper.NotifyForDebit(sender.Email, $"{sender.FirstName} {sender.LastName}",
+                                                                      amountToSend.ToString(), getSenderWallet.Data.ledgerBalance.ToString(),
+                                                                      vat.ToString(), charges.ToString(), DateTime.Now.ToString(),
+                                                                      payload.narration,
+                                                                      transactionReference);
+
+                                    await _transactionHelper.NotifyForDebitSMS(sender,
+                                                                               sourceAccount.AccountNumber,
+                                                                               amountToSend.ToString().ToString(),
+                                                                               getSenderWallet.Data.ledgerBalance.ToString(),
+                                                                               model.Description);
+                                }
+
                             }
                             else
                             {
@@ -565,7 +573,7 @@ namespace AscomPayPG.Services.Gateways
                 {   
                     string fullUrl = $"{baseUrl}api/waas/wallet-transactions";
                     StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
-                    AddHeaders(httpClient, JsonConvert.SerializeObject(model), fullUrl, Guid.NewGuid().ToString().Replace("-", ""));
+                    _transactionHelper.AddHeaders(httpClient, JsonConvert.SerializeObject(model), fullUrl, Guid.NewGuid().ToString().Replace("-", ""));
                     var _requestTime = DateTime.Now;
 
                     using (var response = await httpClient.PostAsync(fullUrl, content))
@@ -1244,51 +1252,6 @@ namespace AscomPayPG.Services.Gateways
 
 
         #region Transaction Helpers
-            private async Task<string> GetAccessToken(string payload, string requestUrl, string xToken)
-            {
-
-                if (xToken == null)
-                    return null;
-                string iP = SmartObj.GetServerLocalIp();
-                if (iP == null)
-                    return null;
-           
-                string generatedDate = DateTime.Now.ToString();
-                SmartObj.CreatePasswordHash($"{xToken}X{iP}X{generatedDate}", out byte[] accessTokenHash, out byte[] accessTokenSalt);
-                SmartObj.CreatePasswordHash($"{payload}", out byte[] payloadHash, out byte[] payloadSalt);
-
-                var log = new PaymentGateWayMiddlewareLog
-                {
-                    AccessToken = Convert.ToBase64String(accessTokenHash),
-                    RquestUrl = requestUrl,
-                    GenerationDate = generatedDate,
-                    AccessTokenHash = accessTokenHash,
-                    AccessTokenSalt = accessTokenSalt,
-                    PayloadHash = payloadHash,
-                    PayloadSalt = payloadSalt,
-                    Ip = iP
-                };
-
-                _context.PaymentGateWayMiddlewareLogs.Add(log);
-
-
-                if (!(_context.SaveChanges() > 0))
-                    return null;
-
-                return Convert.ToBase64String(accessTokenHash);
-            }
-            private async Task AddHeaders(HttpClient httpClient, string payloadLoadAsJsonString, string fullUrl, string _xToken = "")
-            {
-                var bearer = _httpContextAccessor.HttpContext.Request.Headers["Authorization"];
-                var xtoken = !string.IsNullOrEmpty(_httpContextAccessor.HttpContext.Request.Headers["Xtoken"].ToString()) ? _httpContextAccessor.HttpContext.Request.Headers["Xtoken"].ToString() : _xToken;
-                var accessToken = await GetAccessToken(payloadLoadAsJsonString, fullUrl, xtoken);
-
-
-                httpClient.DefaultRequestHeaders.Accept.Clear();
-                httpClient.DefaultRequestHeaders.Add("CrossAccess", $"{accessToken}");
-                httpClient.DefaultRequestHeaders.Add("Authorization", $"{bearer}");
-                httpClient.DefaultRequestHeaders.Add("Xtoken", $"{xtoken}");
-            }
             public async Task<decimal> UpdateDestinationAccountBalance(Models.DTO.Account account, decimal amount)
             {
                 var currentBalance = account.CurrentBalance;
@@ -1376,7 +1339,7 @@ namespace AscomPayPG.Services.Gateways
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                    fullUrl = $"{baseUrl}api/waas/account-look-up";
                 var payloadLoadAsJsonString = JsonConvert.SerializeObject(lookupRequestPayLoad);
-                    await AddHeaders(httpClient, payloadLoadAsJsonString, fullUrl, Guid.NewGuid().ToString().Replace("-", ""));
+                    await _transactionHelper.AddHeaders(httpClient, payloadLoadAsJsonString, fullUrl, Guid.NewGuid().ToString().Replace("-", ""));
 
                     ExternalIntegrationLog externalIntegrationLog = new ExternalIntegrationLog
                     {

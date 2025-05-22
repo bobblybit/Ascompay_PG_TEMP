@@ -1,5 +1,6 @@
 using AscomPayPG.Models.Shared;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AscomPayPG.Models
 {
@@ -13,9 +14,10 @@ namespace AscomPayPG.Models
             UpdatedAt = DateTime.Now;
         }
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long WebhookId { get; set; }
         public string Reference { get; set; }
-        public Guid Uid { get; set; } = new Guid();
+        public Guid Uid { get; set; } = Guid.NewGuid();
         public string RequestString { get; set; }
         public string? EventType { get; set; }
         public string? Vendor { get; set; }

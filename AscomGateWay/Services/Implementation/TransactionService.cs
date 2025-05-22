@@ -533,7 +533,18 @@ namespace AscomPayPG.Services.Implementation
 
                 var accountEntity = await _clientRequestRepo.GetUserAccount(payload.accountnumber);
                 var hookEntity = _context.Webhook.FirstOrDefault(x => x.Reference == payload.transactionref);
-                if (hookEntity == null && hookEntity.IsSettled == false)
+                if (hookEntity != null)
+                {
+                    if (hookEntity.IsSettled)
+                    {
+                        response.message = "posibly settled or Invalid transaction";
+                        response.success = false;
+                        response.status = "failed";
+                        response.transactionref = payload.transactionref;
+                        return response;
+                    }
+                }
+                else
                 {
                     response.message = payload.message.ToLower();
                     response.success = true;
@@ -549,6 +560,7 @@ namespace AscomPayPG.Services.Implementation
                         webhook.EventType = "collection.successful";
                         webhook.Vendor = "9PSB";
                         webhook.Service = "Payment";
+                        webhook.IsSettled = true;
                         webhook.RequestString = json.ToString();
                         _context.Add(webhook);
                         await _context.SaveChangesAsync();
@@ -575,19 +587,21 @@ namespace AscomPayPG.Services.Implementation
                     {
                         var receiver = await _context.Users.FirstOrDefaultAsync(a => a.UserUid == accountEntity.UserUid);
 
-                        await _transactionHelper.NotifyForCredit($"{receiver.FirstName} {receiver.LastName}", receiver.Email,
-                     $"{payload.sendername}",
-                     payload.amount.ToString(),
-                     getRecipientWallet.Data.ledgerBalance.ToString(),
-                     DateTime.Now.ToString(), payload.narration);
                         //send sms notification
-                        await _transactionHelper.NotifyForCreditSMS(receiver, payload.accountnumber, payload.amount.ToString(), getRecipientWallet.Data.ledgerBalance.ToString(), payload.narration);
+                        if (receiver.IsNotificationEnabled.Value == true)
+                        {
+                              await _transactionHelper.NotifyForCredit($"{receiver.FirstName} {receiver.LastName}", receiver.Email,
+                             $"{payload.sendername}",
+                             payload.amount.ToString(),
+                             getRecipientWallet.Data.ledgerBalance.ToString(),
+                             DateTime.Now.ToString(), payload.narration);
 
-
-                        var paymentProviderCharges = await _transactionHelper.GetPaymentProviderCharges(TransactionTypes.IncommingTransfer.ToString());
-                        var marchantCharge = await _transactionHelper.CalculateCharges(decimal.Parse(payload.amount), TransactionTypes.IncommingTransfer.ToString());
-                        var charges = paymentProviderCharges + marchantCharge;
-                        var vat = await _transactionHelper.CalculateVAT(decimal.Parse(payload.amount) + charges, TransactionTypes.IncommingTransfer.ToString());
+                            await _transactionHelper.NotifyForCreditSMS(receiver, payload.accountnumber, payload.amount.ToString(), getRecipientWallet.Data.ledgerBalance.ToString(), payload.narration);
+                        }
+                            var paymentProviderCharges = await _transactionHelper.GetPaymentProviderCharges(TransactionTypes.IncommingTransfer.ToString());
+                            var marchantCharge = await _transactionHelper.CalculateCharges(decimal.Parse(payload.amount), TransactionTypes.IncommingTransfer.ToString());
+                            var charges = paymentProviderCharges + marchantCharge;
+                            var vat = await _transactionHelper.CalculateVAT(decimal.Parse(payload.amount) + charges, TransactionTypes.IncommingTransfer.ToString());
 
 
                         var credit = await _clientRequestRepo.BuildCredit(decimal.Parse(payload.amount), paymentProviderCharges, marchantCharge,
@@ -606,14 +620,14 @@ namespace AscomPayPG.Services.Implementation
                         response.transactionref = payload.transactionref;
                     }
                 }
-                else
+               /* else
                 {
                     response.message = "posibly settled or Invalid transaction";
                     response.success = false;
                     response.status = "failed";
                     response.transactionref = payload.transactionref;
                     return response;
-                }
+                }*/
             }
             catch (Exception ex)
             {

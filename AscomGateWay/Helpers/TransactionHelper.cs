@@ -17,13 +17,18 @@ namespace AscomPayPG.Helpers
         private readonly IEmailNotification _emailNotification;
         private readonly ISMSNotification _smsNotification;
         private readonly INotificationRepository _notificationRepository;
-        public TransactionHelper(AppDbContext appDbContext, IEmailNotification emailNotification,
-                                 INotificationRepository notificationRepository, ISMSNotification smsNotification)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public TransactionHelper(AppDbContext appDbContext, 
+                                 IEmailNotification emailNotification,
+                                 INotificationRepository notificationRepository,
+                                 ISMSNotification smsNotification,
+                                 IHttpContextAccessor httpContextAccessor)
         {
             _appContext = appDbContext;
             _emailNotification = emailNotification;
             _notificationRepository = notificationRepository;
             _smsNotification = smsNotification;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<decimal> CalculateVAT(decimal amount, string transactionType)
@@ -85,7 +90,7 @@ namespace AscomPayPG.Helpers
             }
             finally
             {
-                var notificationToAdd = new NotificationLog
+              /*  var notificationToAdd = new NotificationLog
                 {
                     DCreatedOn = DateTime.Now,
                     DLastTriedOn = DateTime.Now,
@@ -101,7 +106,7 @@ namespace AscomPayPG.Helpers
                     Origin = "AscomPayPG",
                 };
 
-                var responsed = await _notificationRepository.AddNotification(notificationToAdd);
+                var responsed = await _notificationRepository.AddNotification(notificationToAdd);*/
             }
         }
 
@@ -206,6 +211,67 @@ namespace AscomPayPG.Helpers
                     errorMessage = ex.Message;
                     throw;
                 }
+        }
+
+        public async Task<string> GetAccessToken(string payload, string requestUrl, string xToken)
+        {
+
+            if (xToken == null)
+                return null;
+            string iP = SmartObj.GetServerLocalIp();
+            if (iP == null)
+                return null;
+
+            string generatedDate = DateTime.Now.ToString();
+            SmartObj.CreatePasswordHash($"{xToken}X{iP}X{generatedDate}", out byte[] accessTokenHash, out byte[] accessTokenSalt);
+            SmartObj.CreatePasswordHash($"{payload}", out byte[] payloadHash, out byte[] payloadSalt);
+
+            var log = new PaymentGateWayMiddlewareLog
+            {
+                AccessToken = Convert.ToBase64String(accessTokenHash),
+                RquestUrl = requestUrl,
+                GenerationDate = generatedDate,
+                AccessTokenHash = accessTokenHash,
+                AccessTokenSalt = accessTokenSalt,
+                PayloadHash = payloadHash,
+                PayloadSalt = payloadSalt,
+                Ip = iP
+            };
+
+            _appContext.PaymentGateWayMiddlewareLogs.Add(log);
+
+
+            if (!(_appContext.SaveChanges() > 0))
+                return null;
+
+            return Convert.ToBase64String(accessTokenHash);
+        }
+        public async Task AddHeaders(HttpClient httpClient, string payloadLoadAsJsonString, string fullUrl, string _xToken = "")
+        {
+            var bearer = _httpContextAccessor.HttpContext.Request.Headers["Authorization"];
+            var xtoken = !string.IsNullOrEmpty(_httpContextAccessor.HttpContext.Request.Headers["Xtoken"].ToString()) ? _httpContextAccessor.HttpContext.Request.Headers["Xtoken"].ToString() : _xToken;
+            var accessToken = await GetAccessToken(payloadLoadAsJsonString, fullUrl, xtoken);
+
+            httpClient.DefaultRequestHeaders.Accept.Clear();
+            httpClient.DefaultRequestHeaders.Add("CrossAccess", $"{accessToken}");
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"{bearer}");
+            httpClient.DefaultRequestHeaders.Add("Xtoken", $"{xtoken}");
+        }
+
+        async Task<Dictionary<string, string>> ITransactionHelper.GetPGMRequestHeaders(string payloadLoadAsJsonString, string fullUrl, string _xToken)
+        {
+            var bearer = _httpContextAccessor.HttpContext.Request.Headers["Authorization"];
+            var xtoken = !string.IsNullOrEmpty(_httpContextAccessor.HttpContext.Request.Headers["Xtoken"].ToString()) ? _httpContextAccessor.HttpContext.Request.Headers["Xtoken"].ToString() : _xToken;
+            var accessToken = await GetAccessToken(payloadLoadAsJsonString, fullUrl, xtoken);
+
+            var PGMHeaders = new Dictionary<string, string>
+            {
+                { "CrossAccess", accessToken },
+                { "Authorization", bearer },
+                { "Xtoken", xtoken }
+            };
+
+            return PGMHeaders;
         }
     }
 }

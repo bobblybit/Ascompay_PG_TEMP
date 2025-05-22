@@ -6,6 +6,7 @@ using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.VasModels;
 using AscomPayPG.Services.Gateways.Interface;
 using AscomPayPG.Services.Interface;
+using PaymentGateWayMiddleWare.Model;
 
 namespace AscomPayPG.Services.Implementation
 {
@@ -29,10 +30,10 @@ namespace AscomPayPG.Services.Implementation
             _clientRequestRepo = clientRequestRepo;
         }
 
-        public Task<PlainResponse> GetDataPlans(string phoneNumber) => _vasService.GetDataPlans(phoneNumber);
-        public Task<PlainResponse> GetPhoneNumberNetwork(string phoneNumber) => _vasService.GetPhoneNetwork(phoneNumber);
-        public Task<PlainResponse> GetTopUpStatus(string transReference) => _vasService.GetTopUpStatus(transReference);
-        public async Task<PlainResponse> PurchaseAirtime(AirTimeTopUpRequest requestModel, string userId)
+        public async Task<Nine9psbListGenResponse<DataPlansResponse>> GetDataPlans(string phoneNumber) => await  _vasService.GetDataPlans(phoneNumber);
+        public async Task<Nine9psbGenResponse<PhoneNumberLookUpResponse>> GetPhoneNumberNetwork(string phoneNumber) => await _vasService.GetPhoneNetwork(phoneNumber);
+        public Task<Nine9psbGenResponse<StatusResponse>> GetTopUpStatus(string transReference) => _vasService.GetTopUpStatus(transReference);
+        public async Task<Nine9psbGenResponse<AirtimeTopUp>> PurchaseAirtime(AirTimeTopUpRequest requestModel, string userId)
         {
             var paymentProviderCharges = await _transactionHelper.GetPaymentProviderCharges(TransactionTypes.AirTimeTopUp.ToString());
             var marchantCharge = await _transactionHelper.CalculateCharges(decimal.Parse(requestModel.amount), TransactionTypes.AirTimeTopUp.ToString());
@@ -44,7 +45,7 @@ namespace AscomPayPG.Services.Implementation
                 var account = _appDbContext.Accounts.FirstOrDefault(acc => acc.UserUid.ToString() == userId);
                 if (account == null)
                 {
-                    return new PlainResponse
+                    return new Nine9psbGenResponse<AirtimeTopUp>
                     {
                         Data = null,
                         IsSuccessful = false,
@@ -56,7 +57,7 @@ namespace AscomPayPG.Services.Implementation
                 var user = _appDbContext.Users.FirstOrDefault(x => x.UserUid == account.UserUid);
                 if (user == null)
                 {
-                    return new PlainResponse
+                    return new Nine9psbGenResponse<AirtimeTopUp>
                     {
                         Data = null,
                         IsSuccessful = false,
@@ -67,7 +68,7 @@ namespace AscomPayPG.Services.Implementation
 
                 if (account.CurrentBalance < decimal.Parse(requestModel.amount))
                 {
-                    return new PlainResponse
+                    return new Nine9psbGenResponse<AirtimeTopUp>
                     {
                         Data = null,
                         IsSuccessful = false,
@@ -97,7 +98,7 @@ namespace AscomPayPG.Services.Implementation
             }
             catch (Exception ex)
             {
-                return new PlainResponse
+                return new Nine9psbGenResponse<AirtimeTopUp>
                 {
                     Data = null,
                     IsSuccessful = false,
@@ -106,7 +107,7 @@ namespace AscomPayPG.Services.Implementation
                 };
             }
         }
-        public async Task<PlainResponse> PurchaseData(DataTopUpRequest requestModel, string userId)
+        public async Task<Nine9psbGenResponse<DataTopUpResponse>> PurchaseData(DataTopUpRequest requestModel, string userId)
         {
 
             var paymentProviderCharges = await _transactionHelper.GetPaymentProviderCharges(TransactionTypes.DataTopUp.ToString());
@@ -119,7 +120,7 @@ namespace AscomPayPG.Services.Implementation
                 var account = _appDbContext.Accounts.FirstOrDefault(acc => acc.UserUid.ToString() == userId);
                 if (account == null)
                 {
-                    return new PlainResponse
+                    return new Nine9psbGenResponse<DataTopUpResponse>
                     {
                         Data = null,
                         IsSuccessful = false,
@@ -131,7 +132,7 @@ namespace AscomPayPG.Services.Implementation
                 var user = _appDbContext.Users.FirstOrDefault(x => x.UserUid == account.UserUid);
                 if (user == null)
                 {
-                    return new PlainResponse
+                    return new Nine9psbGenResponse<DataTopUpResponse>
                     {
                         Data = null,
                         IsSuccessful = false,
@@ -142,7 +143,7 @@ namespace AscomPayPG.Services.Implementation
 
                 if (account.CurrentBalance < decimal.Parse(requestModel.amount))
                 {
-                    return new PlainResponse
+                    return new Nine9psbGenResponse<DataTopUpResponse>
                     {
                         Data = null,
                         IsSuccessful = false,
@@ -171,7 +172,7 @@ namespace AscomPayPG.Services.Implementation
             }
             catch (Exception ex)
             {
-                return new PlainResponse
+                return new Nine9psbGenResponse<DataTopUpResponse>
                 {
                     Data = null,
                     IsSuccessful = false,
@@ -182,7 +183,7 @@ namespace AscomPayPG.Services.Implementation
         }
 
         #region BILLER
-        public async Task<PlainResponse> InitBillerPayment(InitaiteBillPaymentRequest requestModel)
+        public async Task<Nine9psbGenResponse<BillerPaymentResponse>> InitBillerPayment(InitaiteBillPaymentRequest requestModel)
         {
             try
             {
@@ -195,7 +196,7 @@ namespace AscomPayPG.Services.Implementation
                 var debitAccount = _appDbContext.Accounts.FirstOrDefault(acc => acc.AccountNumber == requestModel.debitAccount);
                 if (debitAccount == null)
                 {
-                    return new PlainResponse
+                    return new Nine9psbGenResponse<BillerPaymentResponse>
                     {
                         Data = null,
                         IsSuccessful = false,
@@ -207,23 +208,22 @@ namespace AscomPayPG.Services.Implementation
                 var user = _appDbContext.Users.FirstOrDefault(x => x.UserUid == debitAccount.UserUid);
                 if (user == null)
                 {
-                    return new PlainResponse
+                    return new Nine9psbGenResponse<BillerPaymentResponse>
                     {
                         Data = null,
                         IsSuccessful = false,
-                        Message = "User account does not exist",
+                        Message = "Debit account does not exist",
                         ResponseCode = StatusCodes.Status400BadRequest
                     };
                 }
 
-                //  var account = _appDbContext.Accounts.FirstOrDefault(acc => acc.UserUid.ToString() == requestModel.customerId);
                 if (debitAccount?.CurrentBalance < decimal.Parse(requestModel.amount))
                 {
-                    return new PlainResponse
+                    return new Nine9psbGenResponse<BillerPaymentResponse>
                     {
                         Data = null,
                         IsSuccessful = false,
-                        Message = "Insufficient balance",
+                        Message = "Debit account does not exist",
                         ResponseCode = StatusCodes.Status400BadRequest
                     };
                 }
@@ -245,20 +245,24 @@ namespace AscomPayPG.Services.Implementation
                     var journalResponse = await _clientRequestRepo.SaveTransactionJournal(new List<TransactionJournal> { debit });
                     var balance =  UpdateBalance(decimal.Parse(requestModel.amount), debitAccount);
 
-                   var template =  EmailComposer.ComposeEmailForMeterToken(user.LastName, response.Data.token);
-                   await _emailNotification.NewSendEmail("AscomPay", "Bill Payment", template, user.Email );
-                   await _transactionHelper.NotifyForDebitSMS(user, debitAccount.AccountNumber, requestModel.amount, balance.ToString(), $"Bills Payment/{requestModel.billerId}");
+                   var template =  EmailComposer.ComposeEmailForMeterToken(user.LastName, response.Data.Token);
+                    if (user.IsNotificationEnabled.Value)
+                    {
+                       await _emailNotification.NewSendEmail("AscomPay", "Bill Payment", template, user.Email );
+                       await _transactionHelper.NotifyForDebitSMS(user, debitAccount.AccountNumber, requestModel.amount, balance.ToString(), $"Bills Payment/{requestModel.billerId}");
+
+                    }
                 }
 
                 return response;
             }
             catch (Exception ex)
             {
-                return new PlainResponse
+                return new Nine9psbGenResponse<BillerPaymentResponse>
                 {
                     Data = null,
                     IsSuccessful = false,
-                    Message = ex.Message,
+                    Message = "Debit account does not exist",
                     ResponseCode = StatusCodes.Status400BadRequest
                 };
             }
@@ -275,40 +279,16 @@ namespace AscomPayPG.Services.Implementation
             return (decimal)debitAccount.LegerBalance;
         }
 
-        public async Task<PlainResponse> VaildateBillerInputFields(ValidateBillerInputRequest requestModel)
+        public async Task<Nine9psbGenResponse<BillerFieldValidationResponse>> VaildateBillerInputFields(ValidateBillerInputRequest requestModel)
         {
             try
             {
-               /* var user = _appDbContext.Users.FirstOrDefault(acc => acc.UserUid.ToString() == requestModel.customerId);
-                if (user == null)
-                {
-                    return new PlainResponse
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = "User's does not exist",
-                        ResponseCode = StatusCodes.Status400BadRequest
-                    };
-                }
-
-                var account = _appDbContext.Accounts.FirstOrDefault(acc => acc.UserUid.ToString() == requestModel.customerId);*/
-
-               /* if (account?.CurrentBalance < decimal.Parse(requestModel.amount))
-                {
-                    return new PlainResponse
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = "Insufficient balance",
-                        ResponseCode = StatusCodes.Status400BadRequest
-                    };
-                }*/
 
                 return await _vasService.VaildateBillerInputFields(requestModel);
             }
             catch (Exception ex)
             {
-                return new PlainResponse
+                return new Nine9psbGenResponse<BillerFieldValidationResponse>
                 {
                     Data = null,
                     IsSuccessful = false,
@@ -317,10 +297,10 @@ namespace AscomPayPG.Services.Implementation
                 };
             }
         }
-        public async Task<PlainResponse> GetCategory() => await _vasService.GetCategory();  
-        public async Task<PlainResponse> GetCategoryBiller(string categoryId) => await _vasService.GetCategoryBiller(categoryId);
-        public async Task<PlainResponse> GetBillerInputFields(string billerId) => await _vasService.GetBillerInputFields(billerId);
-        public async Task<PlainResponse> GetBillerPaymentStatus(string transactionReferenceId) => await _vasService.GetBillerPaymentStatus(transactionReferenceId);
+        public async Task<Nine9psbListGenResponse<Category>> GetCategory() => await _vasService.GetCategory();  
+        public async Task<Nine9psbListGenResponse<CategoryBiller>> GetCategoryBiller(string categoryId) => await _vasService.GetCategoryBiller(categoryId);
+        public async Task<Nine9psbListGenResponse<BillerField>> GetBillerInputFields(string billerId) => await _vasService.GetBillerInputFields(billerId);
+        public async Task<Nine9psbGenResponse<TransactionStatusResponse>> GetBillerPaymentStatus(string transactionReferenceId) => await _vasService.GetBillerPaymentStatus(transactionReferenceId);
         #endregion
     }
 }

@@ -11,6 +11,6 @@
         public string RquestUrl { get; set; }
         public string AccessToken { get; set; }
         public string Ip { get; set; }
-
+        public bool IsUsed { get; set; }
     }
 }

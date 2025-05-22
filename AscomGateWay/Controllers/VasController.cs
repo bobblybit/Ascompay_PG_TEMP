@@ -1,4 +1,6 @@
-﻿using AscomPayPG.Models.VasModels;
+﻿using AscomPayPG.Filters;
+using AscomPayPG.Helpers;
+using AscomPayPG.Models.VasModels;
 using AscomPayPG.Services.Filters;
 using AscomPayPG.Services.Interface;
 using Microsoft.AspNetCore.Mvc;
@@ -10,9 +12,12 @@ namespace AscomPayPG.Controllers
     public class VasController : ControllerBase
     {
         private readonly IVasService _vasService;
-        public VasController(IVasService vasService)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public VasController(IVasService vasService, IHttpContextAccessor httpContextAccessor)
         {
             _vasService = vasService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
 
@@ -34,6 +39,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpGet("phone-network")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         public async Task<IActionResult> GetPhoneNumberNetwork([FromQuery] string phoneNumber)
         {
             var response = await _vasService.GetPhoneNumberNetwork(phoneNumber);
@@ -59,6 +65,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpGet("data-plans")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         public async Task<IActionResult> PurchaseData([FromQuery] string phoneNumber)
         {
             var response = await _vasService.GetDataPlans(phoneNumber);
@@ -84,6 +91,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpGet("transaction-status")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         public async Task<IActionResult> GetTopUpStatus([FromQuery] string transactionReference)
         {
             var response = await _vasService.GetTopUpStatus(transactionReference);
@@ -109,9 +117,12 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("airtime-top-up")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         [ServiceFilter(typeof(VasTransactionValidator))]
-        public async Task<IActionResult> PurchaseAirtime([FromBody] AirTimeTopUpRequest model, [FromQuery]string userId)
+        public async Task<IActionResult> PurchaseAirtime([FromBody] AirTimeTopUpRequest model)
         {
+            var userId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("UserUid");
+
             var response = await _vasService.PurchaseAirtime(model, userId);
             if (response.IsSuccessful == true)
                 return Ok(response);
@@ -135,9 +146,12 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("data-top-up")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         [ServiceFilter(typeof(VasTransactionValidator))]
-        public async Task<IActionResult> PurchaseData([FromBody] DataTopUpRequest model, [FromQuery] string userId)
+        public async Task<IActionResult> PurchaseData([FromBody] DataTopUpRequest model)
         {
+            var userId = _httpContextAccessor.HttpContext.Session.GetObjectFromJson<string>("UserUid");
+
             var response = await _vasService.PurchaseData(model, userId);
             if (response.IsSuccessful == true)
                 return Ok(response);
@@ -160,7 +174,8 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpGet("get-category")]
+        [HttpGet("biller/category")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         public async Task<IActionResult> GetCategory()
         {
             var response = await _vasService.GetCategory();
@@ -185,7 +200,8 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpGet("get-category/{transactionReference}")]
+        [HttpGet("biller-payment-status/{transactionReference}")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         public async Task<IActionResult> GetBillerPaymentStatus([FromRoute] string transactionReference)
         {
             var response = await _vasService.GetBillerPaymentStatus(transactionReference);
@@ -194,6 +210,7 @@ namespace AscomPayPG.Controllers
             else
                 return BadRequest(response);
         }
+
 
         /// <summary>
         ///  This endpoint provides a list of billers under a category
@@ -211,6 +228,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpGet("get-category-biller/{categoryId}")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         public async Task<IActionResult> GetCategoryBiller([FromRoute] string categoryId)
         {
             var response = await _vasService.GetCategoryBiller(categoryId);
@@ -236,6 +254,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpGet("biller-input-field/{billerId}")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         public async Task<IActionResult> GetBillerInputFields([FromRoute] string billerId)
         {
             var response = await _vasService.GetBillerInputFields(billerId);
@@ -261,6 +280,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("biller-input-validation")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         public async Task<IActionResult> VaildateBillerInputFields([FromBody] ValidateBillerInputRequest requestModel)
         {
             var response = await _vasService.VaildateBillerInputFields(requestModel);
@@ -287,6 +307,7 @@ namespace AscomPayPG.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("biller-payment")]
+        [ServiceFilter(typeof(UserSessionValidator))]
         [ServiceFilter(typeof(VasTransactionValidator))]
         public async Task<IActionResult> InitBillerPayment([FromBody] InitaiteBillPaymentRequest requestModel)
         {

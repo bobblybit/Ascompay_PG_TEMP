@@ -33,7 +33,6 @@ namespace AscomPayPG.Helpers.HTTPHelper
             {
                 var client = BuildHeader(httpClient, headerNamesAndKeys);
                 HttpResponseMessage response = await client.PostAsync(url, null);
-
                 return response;
             }
         }
@@ -44,7 +43,6 @@ namespace AscomPayPG.Helpers.HTTPHelper
             {
                 var client = BuildPayload(httpClient);
                 HttpResponseMessage response = await client.PostAsync(url, null);
-
                 return response;
             }
         }
@@ -55,7 +53,6 @@ namespace AscomPayPG.Helpers.HTTPHelper
             {
                 var client = BuildHeader(httpClient, headerNamesAndKeys);
                 HttpResponseMessage response = await client.GetAsync(url);
-
                 return response;
             }
         }

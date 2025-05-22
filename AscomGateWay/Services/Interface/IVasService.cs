@@ -1,25 +1,26 @@
 ﻿using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.VasModels;
+using PaymentGateWayMiddleWare.Model;
 
 namespace AscomPayPG.Services.Interface
 {
     public interface IVasService
     {
         #region TOP UP
-       Task<PlainResponse> PurchaseAirtime(AirTimeTopUpRequest requestModel, string userId);
-       Task<PlainResponse> PurchaseData(DataTopUpRequest airtime, string userId);
-       Task<PlainResponse> GetPhoneNumberNetwork(string phoneNumber);
-       Task<PlainResponse> GetDataPlans(string phoneNumber);
-       Task<PlainResponse> GetTopUpStatus(string transReference);
+       Task<Nine9psbGenResponse<PhoneNumberLookUpResponse>> GetPhoneNumberNetwork(string phoneNumber);
+       Task<Nine9psbListGenResponse<DataPlansResponse>> GetDataPlans(string phoneNumber);
+       Task<Nine9psbGenResponse<AirtimeTopUp>> PurchaseAirtime(AirTimeTopUpRequest requestModel, string userId);
+       Task<Nine9psbGenResponse<DataTopUpResponse>> PurchaseData(DataTopUpRequest airtime, string userId);
+       Task<Nine9psbGenResponse<StatusResponse>> GetTopUpStatus(string transReference);
         #endregion
 
         #region BILLER
-        Task<PlainResponse> GetCategory();
-        Task<PlainResponse> GetCategoryBiller(string categoryId);
-        Task<PlainResponse> GetBillerInputFields(string billerId);
-        Task<PlainResponse> GetBillerPaymentStatus(string transactionReferenceId);
-        Task<PlainResponse> VaildateBillerInputFields(ValidateBillerInputRequest requestModel);
-        Task<PlainResponse> InitBillerPayment(InitaiteBillPaymentRequest requestModel);
+        Task<Nine9psbListGenResponse<Category>> GetCategory();
+        Task<Nine9psbListGenResponse<CategoryBiller>> GetCategoryBiller(string categoryId);
+        Task<Nine9psbListGenResponse<BillerField>> GetBillerInputFields(string billerId);
+        Task<Nine9psbGenResponse<BillerFieldValidationResponse>> VaildateBillerInputFields(ValidateBillerInputRequest requestModel);
+        Task<Nine9psbGenResponse<BillerPaymentResponse>> InitBillerPayment(InitaiteBillPaymentRequest requestModel);
+        Task<Nine9psbGenResponse<TransactionStatusResponse>> GetBillerPaymentStatus(string transactionReferenceId);
         #endregion
     }
 }

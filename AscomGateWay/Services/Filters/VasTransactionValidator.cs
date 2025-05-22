@@ -20,7 +20,7 @@ namespace AscomPayPG.Services.Filters
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             var request = context.HttpContext.Request;
-            var transactionToken = request.Headers["token"];
+            var transactionToken = request.Headers["xtoken"];
 
            if (string.IsNullOrWhiteSpace(transactionToken))
             {

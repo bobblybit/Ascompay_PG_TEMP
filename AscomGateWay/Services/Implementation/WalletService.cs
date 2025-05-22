@@ -281,7 +281,6 @@ namespace AscomPayPG.Services.Implementation
 
                 await UpdateSourceAccount(sourceAccount, decimal.Parse(model.Amount) + vat + charges);
 
-
                 var debit = await _clientRequestRepo.BuildDebit(decimal.Parse(model.Amount), paymentProviderCharges, marchantCharge, lookUpRecord.AccountName,
                                                                                       transactionReference, decimal.Parse(model.Amount) + vat + charges, model.Description,
                                                                                       TransactionTypes.TransferToOthersBanks.ToString(),

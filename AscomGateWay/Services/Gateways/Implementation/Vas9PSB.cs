@@ -6,7 +6,11 @@ using AscomPayPG.Models;
 using AscomPayPG.Models.Shared;
 using AscomPayPG.Models.VasModels;
 using AscomPayPG.Services.Gateways.Interface;
+using AscomPayPG.Services.Interface;
+using Nancy;
 using Newtonsoft.Json;
+using PaymentGateWayMiddleWare.Model;
+using System;
 using System.Dynamic;
 using System.Text;
 
@@ -15,10 +19,12 @@ namespace AscomPayPG.Services.Gateways.Implementation
     public class Vas9PSB : I9psbVaS
     {
         private readonly AppDbContext _appdbContext;
+        private readonly ITransactionHelper _transactionHelper;
 
-        public Vas9PSB(AppDbContext appdbContext) 
+        public Vas9PSB(AppDbContext appdbContext, ITransactionHelper transactionHelper) 
         {
             _appdbContext = appdbContext;
+            _transactionHelper = transactionHelper;
         }    
         private async Task<VatAuthResponse> Authenticate()
         {
@@ -48,36 +54,24 @@ namespace AscomPayPG.Services.Gateways.Implementation
         }
 
         #region TOP-UP
-        public async Task<PlainResponse> GetPhoneNetwork(string phoneNumber)
+        public async Task<Nine9psbGenResponse<PhoneNumberLookUpResponse>> GetPhoneNetwork(string phoneNumber)
         {
             try
             {
-                dynamic responseObj = new ExpandoObject();
-
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = tokenResponse.Token,
-                        ResponseCode = 200
-                    };
-                }
-
-               var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-                var URL = NinePSBVatUrls.PGM_PhoneNetworks.Replace("[phoneNumber]", phoneNumber);
+                var responseObj = new Nine9psbGenResponse<PhoneNumberLookUpResponse>();
+            
+                var url = NinePSBVatUrls.PGM_PhoneNetworks.Replace("[phoneNumber]", phoneNumber);
+                var header  = await _transactionHelper.GetPGMRequestHeaders("NonBodyPGMRequest", url, Guid.NewGuid().ToString().Replace("-", ""));
                 var RequestTime = DateTime.Now;
-                var response = await RequestHelper.Get(URL, header);
+                var response = await RequestHelper.Get(url, header);
                 string apiResponse = await response.Content.ReadAsStringAsync();
-                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                responseObj = JsonConvert.DeserializeObject<Nine9psbGenResponse<PhoneNumberLookUpResponse>>(apiResponse);
 
                 var log = new ExternalIntegrationLog
                 {
                     CreatedBy = "Ascompay",
                     RequestTime = RequestTime,
-                    RequestPayload = JsonConvert.SerializeObject(URL),
+                    RequestPayload = JsonConvert.SerializeObject(url),
                     Response = apiResponse,
                     ResponseTime = DateTime.Now,
                     Service = "Payment",
@@ -86,116 +80,63 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 _appdbContext.ExternalIntegrationLogs.Add(log);
                 _appdbContext.SaveChanges();
 
-                if (responseObj?.responseCode == "200")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
-                else
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
+                return responseObj;
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+                return new Nine9psbGenResponse<PhoneNumberLookUpResponse>() { IsSuccessful = true, Message = ex.Message, Data = null };
             }
         }
-        public async Task<PlainResponse> GetDataPlans(string phoneNumber)
+        public async Task<Nine9psbListGenResponse<DataPlansResponse>> GetDataPlans(string phoneNumber)
         {
             try
             {
-                dynamic responseObj = new ExpandoObject();
-
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                         Data = null,
-                         IsSuccessful= false,
-                         Message = tokenResponse.Token,
-                         ResponseCode= 200
-                    };
-                }
+                var responseObj = new Nine9psbListGenResponse<DataPlansResponse>();
                 
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
                 var url = NinePSBVatUrls.PGM_DataPlans.Replace("[phoneNumber]", phoneNumber);
+                var header = await _transactionHelper.GetPGMRequestHeaders("NonBodyPGMRequest", url, Guid.NewGuid().ToString().Replace("-", ""));
                 var response = await RequestHelper.Get(url, header);
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-
-                if (responseObj?.responseCode == "200")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
-                else
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
+                    responseObj = JsonConvert.DeserializeObject<Nine9psbListGenResponse<DataPlansResponse>>(apiResponse);
+                return responseObj;
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+                return new Nine9psbListGenResponse<DataPlansResponse> { IsSuccessful = true, Message = ex.Message, Data = null };
             }
         }
-        public async Task<PlainResponse> GetTopUpStatus(string transactionReferenceId)
+        public async Task<Nine9psbGenResponse<StatusResponse>> GetTopUpStatus(string transactionReferenceId)
         {
             try
             {
-                dynamic responseObj = new ExpandoObject();
-
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = tokenResponse.Token,
-                        ResponseCode = 200
-                    };
-                }
-
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
+                var responseObj = new Nine9psbGenResponse<StatusResponse>();
                 var url = NinePSBVatUrls.PGM_TransactionStatus.Replace("[transReference]", transactionReferenceId);
+                var header = await _transactionHelper.GetPGMRequestHeaders("NonBodyPGMRequest", url, Guid.NewGuid().ToString().Replace("-", ""));
                 var response = await RequestHelper.Get(url, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
-                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                responseObj = JsonConvert.DeserializeObject<Nine9psbGenResponse<StatusResponse>>(apiResponse);
 
-                if (responseObj?.responseCode == "200")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
-                else
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
+                return responseObj;
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+                return new Nine9psbGenResponse<StatusResponse> { IsSuccessful = true, Message = ex.Message, Data = null };
             }
         }
-        public async Task<PlainResponse> PurchaseAirtime(AirTimeTopUpRequest requestModel)
+        public async Task<Nine9psbGenResponse<AirtimeTopUp>> PurchaseAirtime(AirTimeTopUpRequest requestModel)
         {
             try
             {
-                dynamic responseObj = new ExpandoObject();
-
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = tokenResponse.Token,
-                        ResponseCode = 200
-                    };
-                }
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-
-                /* var payloadLoadAsJsonString = JsonConvert.SerializeObject(requestModel);
-                 StringContent content = new StringContent(JsonConvert.SerializeObject(payloadLoadAsJsonString), Encoding.UTF8, "application/json");*/
+                var responseObj = new Nine9psbGenResponse<AirtimeTopUp>();
 
                 StringContent content = new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
-
-
+                var header = await _transactionHelper.GetPGMRequestHeaders(JsonConvert.SerializeObject(requestModel), NinePSBVatUrls.PGM_AirTimePurchase);
                 var RequestTime = DateTime.Now;
                 var response = await RequestHelper.PostWithBody(NinePSBVatUrls.PGM_AirTimePurchase, content, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
-
 
                 var log = new ExternalIntegrationLog
                 {
@@ -210,37 +151,20 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 _appdbContext.ExternalIntegrationLogs.Add(log);
                 _appdbContext.SaveChanges();
 
-                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-
-                if (responseObj?.responseCode == "200")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
-                else
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
+                responseObj = JsonConvert.DeserializeObject<Nine9psbGenResponse<AirtimeTopUp>>(apiResponse);
+                return responseObj;
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+                return new Nine9psbGenResponse<AirtimeTopUp> { IsSuccessful = true, Message = ex.Message, Data = null };
             }
         }
-        public async Task<PlainResponse> PurchaseDataPlan(DataTopUpRequest requestModel)
+        public async Task<Nine9psbGenResponse<DataTopUpResponse>> PurchaseDataPlan(DataTopUpRequest requestModel)
         {
             try
             {
-                dynamic responseObj = new ExpandoObject();
-
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = tokenResponse.Token,
-                        ResponseCode = 200
-                    };
-                }
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-
+                var responseObj = new Nine9psbGenResponse<DataTopUpResponse>();
+                var header = await _transactionHelper.GetPGMRequestHeaders(JsonConvert.SerializeObject(requestModel), NinePSBVatUrls.PGM_AirTimePurchase);
                 var payLoad =  new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
             //    StringContent content = new StringContent(JsonConvert.SerializeObject(payLoad), Encoding.UTF8, "application/json");
 
@@ -263,184 +187,102 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 _appdbContext.ExternalIntegrationLogs.Add(log);
                 _appdbContext.SaveChanges();
 
-                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                responseObj = JsonConvert.DeserializeObject<Nine9psbGenResponse<DataTopUpResponse>>(apiResponse);
 
-                if (responseObj?.responseCode == "200")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
-                else
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
+                return responseObj;
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+                return new Nine9psbGenResponse<DataTopUpResponse> { IsSuccessful = true, Message = ex.Message, Data = null };
             }
         }
         #endregion
 
         #region BILLER
-        public async Task<PlainResponse> GetCategory()
+        public async Task<Nine9psbListGenResponse<Category>> GetCategory()
         {
             try
             {
-                dynamic responseObj = new ExpandoObject();
+                var responseObj = new Nine9psbListGenResponse<Category>();
 
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = tokenResponse.Token,
-                        ResponseCode = 200
-                    };
-                }
-
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
+                var header = await _transactionHelper.GetPGMRequestHeaders("NonBodyPGMRequest", NinePSBVatUrls.PGM_BillCategories, Guid.NewGuid().ToString().Replace("-", ""));
                 var response = await RequestHelper.Get(NinePSBVatUrls.PGM_BillCategories, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
-                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                responseObj = JsonConvert.DeserializeObject<Nine9psbListGenResponse<Category>>(apiResponse);
 
-                if (responseObj?.responseCode == "200")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
-                else
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
+                return responseObj;
+
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+                return new Nine9psbListGenResponse<Category> { IsSuccessful = true, Message = ex.Message, Data = null };
             }
         }
-        public async Task<PlainResponse> GetCategoryBiller(string categoryId)
+        public async Task<Nine9psbListGenResponse<CategoryBiller>> GetCategoryBiller(string categoryId)
         {
             try
             {
-                dynamic responseObj = new ExpandoObject();
-
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = tokenResponse.Token,
-                        ResponseCode = 200
-                    };
-                }
-
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
+                var responseObj = new Nine9psbListGenResponse<CategoryBiller>();
+                var header = await _transactionHelper.GetPGMRequestHeaders("NonBodyPGMRequest", NinePSBVatUrls.PGM_BillCategories, Guid.NewGuid().ToString().Replace("-", ""));
                 var url = NinePSBVatUrls.PGM_CategoryBiller.Replace("[categoryId]", categoryId);
                 var response = await RequestHelper.Get(url, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
-                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                responseObj = JsonConvert.DeserializeObject<Nine9psbListGenResponse<CategoryBiller>>(apiResponse);
 
-                if (responseObj?.responseCode == "200")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
-                else
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
+                return responseObj;
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+                return new Nine9psbListGenResponse<CategoryBiller> { IsSuccessful = true, Message = ex.Message, Data = null };
             }
         }
-        public async Task<PlainResponse> GetBillerInputFields(string billerId)
+        public async Task<Nine9psbListGenResponse<BillerField>> GetBillerInputFields(string billerId)
         {
             try
             {
-                dynamic responseObj = new ExpandoObject();
-
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = tokenResponse.Token,
-                        ResponseCode = 200
-                    };
-                }
-
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
+                var responseObj = new Nine9psbListGenResponse<BillerField>();
+                var header = await _transactionHelper.GetPGMRequestHeaders("NonBodyPGMRequest", NinePSBVatUrls.PGM_BillCategories, Guid.NewGuid().ToString().Replace("-", ""));
                 var response = await RequestHelper.Get(NinePSBVatUrls.PGM_BillerInputFields.Replace("[billerId]", billerId), header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
-
-
-                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
-
-                if (responseObj?.responseCode == "200")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
-                else
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
+                responseObj = JsonConvert.DeserializeObject<Nine9psbListGenResponse<BillerField>>(apiResponse);
+                return responseObj;
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+                return new Nine9psbListGenResponse<BillerField> { IsSuccessful = true, Message = ex.Message, Data = null };
             }
         }
-        public async Task<PlainResponse> VaildateBillerInputFields(ValidateBillerInputRequest requestModel)
+
+        public async Task<Nine9psbGenResponse<BillerFieldValidationResponse>> VaildateBillerInputFields(ValidateBillerInputRequest requestModel)
         {
             try
             {
-                dynamic responseObj = new ExpandoObject();
+                var responseObj = new Nine9psbGenResponse<BillerFieldValidationResponse>();
 
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = tokenResponse.Token,
-                        ResponseCode = 200
-                    };
-                }
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-
+                var header =await  _transactionHelper.GetPGMRequestHeaders(JsonConvert.SerializeObject(requestModel), NinePSBVatUrls.PGM_BillerInputValidate, Guid.NewGuid().ToString().Replace("-", ""));
                 StringContent content = new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
-
                 var response = await RequestHelper.PostWithBody(NinePSBVatUrls.PGM_BillerInputValidate, content, header);
-
                 string apiResponse = await response.Content.ReadAsStringAsync();
-                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                responseObj = JsonConvert.DeserializeObject<Nine9psbGenResponse<BillerFieldValidationResponse>>(apiResponse);
 
-                if (responseObj?.responseCode == "200")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
-                else
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
+                return responseObj;
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+                return new Nine9psbGenResponse<BillerFieldValidationResponse> { IsSuccessful = true, Message = ex.Message, Data = null };
             }
         }
-        public async Task<PlainResponse> InitBillerPayment(InitaiteBillPaymentRequest requestModel)
+        public async Task<Nine9psbGenResponse<BillerPaymentResponse>> InitBillerPayment(InitaiteBillPaymentRequest requestModel)
         {
             try
             {
-                dynamic responseObj = new ExpandoObject();
+                var responseObj = new Nine9psbGenResponse<BillerPaymentResponse>();
 
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = tokenResponse.Token,
-                        ResponseCode = 200
-                    };
-                }
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
-
+                var header = await _transactionHelper.GetPGMRequestHeaders(JsonConvert.SerializeObject(requestModel), NinePSBVatUrls.PGM_AirTimePurchase);
                 StringContent content = new StringContent(JsonConvert.SerializeObject(requestModel), Encoding.UTF8, "application/json");
-
-
                 var response = await RequestHelper.PostWithBody(NinePSBVatUrls.PGM_BillPayment, content, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
@@ -458,51 +300,33 @@ namespace AscomPayPG.Services.Gateways.Implementation
                 _appdbContext.ExternalIntegrationLogs.Add(log);
                 _appdbContext.SaveChanges();
 
-                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                responseObj = JsonConvert.DeserializeObject<Nine9psbGenResponse<BillerPaymentResponse>>(apiResponse);
 
-                if (responseObj?.status == "failed")
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, ResponseCode = int.Parse(responseObj.responseCode) };
-                else
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
+                return responseObj;
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = false, Message = ex.Message, Data = null };
+                return new Nine9psbGenResponse<BillerPaymentResponse> { IsSuccessful = false, Message = ex.Message, Data = null };
             }
         }
-        public async Task<PlainResponse> GetBillerPaymentStatus(string transactionReferenceId)
+        public async Task<Nine9psbGenResponse<TransactionStatusResponse>> GetBillerPaymentStatus(string transactionReferenceId)
         {
             try
             {
-                dynamic responseObj = new ExpandoObject();
+                var responseObj = new Nine9psbGenResponse<TransactionStatusResponse>();
 
-                var tokenResponse = await Authenticate();
-                if (!tokenResponse.IsSuccessfull)
-                {
-                    return new PlainResponse()
-                    {
-                        Data = null,
-                        IsSuccessful = false,
-                        Message = tokenResponse.Token,
-                        ResponseCode = 200
-                    };
-                }
-
-                var header = new Dictionary<string, string> { { "Authorization", $"Bearer {tokenResponse.Token}" } };
+                var header = await _transactionHelper.GetPGMRequestHeaders("NonBodyPGMRequest", NinePSBVatUrls.PGM_BillPaymentStatus.Replace("[transReference]", transactionReferenceId), Guid.NewGuid().ToString().Replace("-", ""));
                 var url = NinePSBVatUrls.PGM_BillPaymentStatus.Replace("[transReference]", transactionReferenceId);
                 var response = await RequestHelper.Get(url, header);
 
                 string apiResponse = await response.Content.ReadAsStringAsync();
-                responseObj = JsonConvert.DeserializeObject<ExpandoObject>(apiResponse);
+                responseObj = JsonConvert.DeserializeObject<Nine9psbGenResponse<TransactionStatusResponse>>(apiResponse);
 
-                if (responseObj?.responseCode == "200")
-                    return new PlainResponse { IsSuccessful = true, Message = responseObj.message, Data = responseObj.data };
-                else
-                    return new PlainResponse { IsSuccessful = false, Message = responseObj.message, Data = null };
+                return responseObj; 
             }
             catch (Exception ex)
             {
-                return new PlainResponse { IsSuccessful = true, Message = ex.Message, Data = null };
+                return new Nine9psbGenResponse<TransactionStatusResponse> { IsSuccessful = true, Message = ex.Message, Data = null };
             }
         }
 
